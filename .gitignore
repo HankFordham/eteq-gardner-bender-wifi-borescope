@@ -1,0 +1,81 @@
+# ---------------------------------------------------------------------------
+# Vendor / third-party material -- MUST NEVER BE PUBLISHED.
+#
+# eteq was developed by reverse-engineering the OmniVision OV780 WiFi camera
+# protocol. The working material below is the vendor's copyrighted software
+# (the Android app, its decompiled Java sources, and disassembly of its native
+# library) plus unrelated personal research notes. Redistributing any of it
+# would infringe the vendor's copyright, so these paths stay local-only. The
+# documented *protocol* lives in docs/PROTOCOL.md; the inputs do not ship.
+# ---------------------------------------------------------------------------
+*.apk
+WIFI+TOOL_*.apk
+decompiled/
+analysis/
+compass_artifact_*.md
+jadx.cmd
+
+# Personal / local camera captures and logs
+live.h264
+*.log
+test_out/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+sdist/
+wheels/
+*.egg-info/
+*.egg
+.eggs/
+.installed.cfg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# PyInstaller output
+*.manifest
+# NOTE: eteq.spec is intentionally tracked; PyInstaller's generated specs are not.
+*-pyinstaller.spec
+
+# Local captures produced by running the tool (tests/data/ is tracked, below)
+*.h264
+*.mp4
+*.jpg
+*.jpeg
+*.ts
+*.mjpg
+
+# Test fixtures must stay tracked despite the capture patterns above.
+!tests/data/
+!tests/data/**
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+*~
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store

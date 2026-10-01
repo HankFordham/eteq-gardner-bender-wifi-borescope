@@ -1,0 +1,653 @@
+{
+  "baseline": {
+    "fps": 30.0,
+    "kbps": 965.3,
+    "width": 640,
+    "height": 240,
+    "frames": 90,
+    "avg_frame_bytes": 4022
+  },
+  "codec": "avc1.42001E",
+  "restored": {
+    "FrameSize": 41943280,
+    "FrameRate": 20,
+    "BitRate": 2048,
+    "Zoom": 0,
+    "Brightness": 128,
+    "Contrast": 4,
+    "Saturation": 4,
+    "FlipMirror": 3
+  },
+  "results": [
+    {
+      "parameter": "FrameSize",
+      "value": 20971760,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 640,
+        "height": 240,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": "the camera stopped sending; this size is probably unsupported"
+    },
+    {
+      "parameter": "FrameSize",
+      "value": 41943280,
+      "acknowledged": true,
+      "measured": {
+        "fps": 28.8,
+        "kbps": 951.9,
+        "width": 640,
+        "height": 240,
+        "frames": 72,
+        "avg_frame_bytes": 4132
+      },
+      "verdict": "applied",
+      "note": ""
+    },
+    {
+      "parameter": "FrameSize",
+      "value": 41943520,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 640,
+        "height": 240,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": "the camera stopped sending; this size is probably unsupported"
+    },
+    {
+      "parameter": "FrameSize",
+      "value": 83886560,
+      "acknowledged": true,
+      "measured": {
+        "fps": 29.2,
+        "kbps": 1751.7,
+        "width": 256,
+        "height": 480,
+        "frames": 73,
+        "avg_frame_bytes": 7500
+      },
+      "verdict": "ignored",
+      "note": "still encoding 256x480"
+    },
+    {
+      "parameter": "FrameSize",
+      "value": 83886800,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": "the camera stopped sending; this size is probably unsupported"
+    },
+    {
+      "parameter": "FrameRate",
+      "value": 3,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "FrameRate",
+      "value": 5,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "FrameRate",
+      "value": 10,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.8,
+        "kbps": 32.3,
+        "width": 256,
+        "height": 480,
+        "frames": 2,
+        "avg_frame_bytes": 5048
+      },
+      "verdict": "ignored",
+      "note": "asked for 10, measured 0.8"
+    },
+    {
+      "parameter": "FrameRate",
+      "value": 15,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "FrameRate",
+      "value": 20,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "FrameRate",
+      "value": 25,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "FrameRate",
+      "value": 30,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "BitRate",
+      "value": 128,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "BitRate",
+      "value": 256,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "BitRate",
+      "value": 512,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "BitRate",
+      "value": 768,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "BitRate",
+      "value": 1024,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "BitRate",
+      "value": 1536,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "BitRate",
+      "value": 2048,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "BitRate",
+      "value": 2560,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "BitRate",
+      "value": 3072,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Zoom",
+      "value": 0,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Zoom",
+      "value": 1,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Zoom",
+      "value": 2,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Zoom",
+      "value": 3,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "FlipMirror",
+      "value": 0,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "FlipMirror",
+      "value": 1,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "FlipMirror",
+      "value": 2,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "FlipMirror",
+      "value": 3,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Infrared",
+      "value": 0,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Infrared",
+      "value": 1,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Infrared",
+      "value": 2,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Brightness",
+      "value": 0,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Brightness",
+      "value": 128,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Brightness",
+      "value": 255,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Contrast",
+      "value": 0,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Contrast",
+      "value": 4,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "Contrast",
+      "value": 7,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "LightCond",
+      "value": 0,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "LightCond",
+      "value": 1,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "LightFreq",
+      "value": 0,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    },
+    {
+      "parameter": "LightFreq",
+      "value": 1,
+      "acknowledged": true,
+      "measured": {
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 256,
+        "height": 480,
+        "frames": 0,
+        "avg_frame_bytes": 0
+      },
+      "verdict": "stream stopped",
+      "note": ""
+    }
+  ]
+}

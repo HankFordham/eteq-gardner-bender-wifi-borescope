@@ -1,0 +1,91 @@
+name: Bug report
+description: Something in eteq does not work the way it should.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report.
+
+        If your camera is a model that is not on the compatibility list, please
+        use the **Camera report** form instead.
+
+        Please do not attach vendor APKs, decompiled vendor code or firmware
+        images -- the project cannot host them.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+      placeholder: The browser page loads but stays black after about two seconds of video.
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command used
+      description: The exact command line you ran.
+      render: shell
+      placeholder: eteq --ip 192.168.1.1 --serve 8080
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - Linux
+        - macOS
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: os-detail
+    attributes:
+      label: OS detail (optional)
+      description: Distribution and version, or Windows build number.
+      placeholder: Ubuntu 24.04 / Windows 11 26200
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: Output of `python --version`, or "frozen exe" if you used eteq.exe.
+      placeholder: Python 3.13.14
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ffmpeg
+    attributes:
+      label: Is ffmpeg installed?
+      description: eteq only needs it for the ffplay and MJPEG output modes.
+      options:
+        - "No"
+        - "Yes, and it is on PATH"
+        - "Yes, but not on PATH"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log excerpt
+      description: Run with `--verbose` and paste the relevant lines.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Network setup, other software talking to the camera, screenshots.
