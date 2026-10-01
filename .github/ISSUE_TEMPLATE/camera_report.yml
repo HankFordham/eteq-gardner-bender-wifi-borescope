@@ -1,0 +1,95 @@
+name: Camera report (new model)
+description: Report a camera or borescope model that works, or does not work, with eteq.
+title: "[camera] "
+labels: ["camera-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The OV780 WiFi module is rebranded by dozens of sellers. Reports of
+        models that **fail** are just as useful as models that work -- this is
+        how the compatibility list grows.
+
+        Please do not attach vendor APKs, decompiled vendor code or firmware
+        images -- the project cannot host them.
+
+  - type: input
+    id: brand-model
+    attributes:
+      label: Brand and model
+      description: Exactly as printed on the device or its packaging.
+      placeholder: Gardner Bender eTEQ WIC-100
+    validations:
+      required: true
+
+  - type: input
+    id: ssid
+    attributes:
+      label: Wi-Fi SSID it broadcasts
+      description: The network name the camera creates, including any numeric suffix.
+      placeholder: WIFI-TOOL-A1B2C3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Overall outcome
+      options:
+        - Works fully
+        - Works partly
+        - Does not work at all
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: what-worked
+    attributes:
+      label: What worked?
+      options:
+        - label: Camera discovery found it
+        - label: Browser player (built-in MP4/MSE)
+        - label: ffplay mode
+        - label: MJPEG mode
+        - label: Recording to a file
+        - label: Auto-reconnect after power cycle
+
+  - type: input
+    id: picture-size
+    attributes:
+      label: Picture size reported
+      description: The resolution the camera reports (see the probe output).
+      placeholder: 1280x720
+    validations:
+      required: true
+
+  - type: textarea
+    id: beacon
+    attributes:
+      label: Beacon hexdump line from the log
+      description: The beacon/announce line eteq logs when it first sees the camera.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: probe
+    attributes:
+      label: Output of `eteq --probe`
+      description: Paste the whole thing, including any errors.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log excerpt (optional but helpful)
+      description: Run `eteq --verbose --log eteq.log` and paste the interesting part.
+      render: shell
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Where you bought it, markings on the board, firmware version, anything odd.

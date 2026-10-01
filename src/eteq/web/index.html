@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eteq camera</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --line: #272c36; --fg: #e8eaf0;
+    --muted: #949cad; --accent: #4f9cff; --ok: #3fb950; --warn: #d29922; --bad: #f85149;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  h1 { font-size: 15px; margin: 0; font-weight: 600; letter-spacing: .2px; }
+  .chip {
+    font-size: 12px; color: var(--muted); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; white-space: nowrap;
+  }
+  .chip b { color: var(--fg); font-weight: 600; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; background: var(--muted); }
+  .dot.live { background: var(--ok); }
+  .dot.stale { background: var(--warn); }
+  .dot.dead { background: var(--bad); }
+  main { padding: 16px; max-width: 1100px; margin: 0 auto; }
+  .stage {
+    background: #000; border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; position: relative; line-height: 0; margin: 0 auto; width: 100%;
+  }
+  /* Bound the picture by viewport height, not just width, so the controls below
+     it stay on screen. The camera sends 640x240; "4:3" is the shape its own app
+     stretches that to. */
+  .stage.fit43 { aspect-ratio: 4 / 3; max-width: calc(68vh * 4 / 3); }
+  .stage video, .stage img { display: block; width: 100%; background: #000; }
+  .stage.fit43 video, .stage.fit43 img { height: 100%; object-fit: fill; }
+  .stage.native video, .stage.native img { height: auto; max-height: 68vh; object-fit: contain; }
+  #overlay {
+    /* grid, not flex: with flex every text run and <br> becomes its own item */
+    position: absolute; inset: 0; display: grid; place-items: center;
+    color: var(--muted); font-size: 13px; text-align: center; padding: 20px; line-height: 1.7;
+    background: rgba(15, 17, 21, .82); backdrop-filter: blur(2px);
+  }
+  #overlay > div { max-width: 46ch; }
+  #overlay b { color: var(--fg); font-weight: 600; }
+  #overlay.hidden { display: none; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  button, select {
+    font: inherit; color: var(--fg); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer;
+  }
+  button:hover:not(:disabled), select:hover { border-color: #39404e; }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #06121f; font-weight: 600; }
+  button.rec { background: var(--bad); border-color: var(--bad); color: #fff; font-weight: 600; }
+  .panel {
+    margin-top: 16px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .panel h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin: 0 0 12px; font-weight: 600;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px 20px; }
+  .ctl { display: grid; grid-template-columns: 92px 1fr 34px; align-items: center; gap: 10px; }
+  .ctl label { color: var(--muted); font-size: 13px; }
+  .ctl input[type=range] { width: 100%; accent-color: var(--accent); }
+  .ctl output { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted); text-align: right; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .note code { background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; font-size: 11px; }
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 16px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  #toast.show { opacity: 1; }
+  @media (max-width: 560px) { main { padding: 10px; } header { padding: 10px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>eteq camera</h1>
+  <span class="chip"><span id="dot" class="dot"></span><span id="state">connecting</span></span>
+  <span class="chip">size <b id="size">-</b></span>
+  <span class="chip">fps <b id="fps">-</b></span>
+  <span class="chip">bitrate <b id="rate">-</b></span>
+  <span class="chip">frames <b id="frames">-</b></span>
+  <span class="chip">repeats <b id="drops">-</b></span>
+  <span class="chip">mode <b id="mode">-</b></span>
+</header>
+
+<main>
+  <div class="stage fit43" id="stage">
+    <video id="video" muted autoplay playsinline></video>
+    <img id="fallback" alt="" hidden>
+    <div id="overlay"><div id="overlay-text">Waiting for the first video frame from the camera&hellip;</div></div>
+  </div>
+
+  <div class="bar">
+    <button id="snap" class="primary">Snapshot</button>
+    <button id="rec">Record</button>
+    <button id="full">Fullscreen</button>
+    <button id="aspect">Aspect: 4:3</button>
+    <button id="relive">Jump to live</button>
+  </div>
+
+  <div class="panel">
+    <h2>Picture</h2>
+    <div class="grid">
+      <div class="ctl"><label for="Brightness">Brightness</label><input type="range" id="Brightness" min="0" max="255" value="128"><output>128</output></div>
+      <div class="ctl"><label for="Contrast">Contrast</label><input type="range" id="Contrast" min="0" max="7" value="4"><output>4</output></div>
+      <div class="ctl"><label for="Saturation">Saturation</label><input type="range" id="Saturation" min="0" max="7" value="4"><output>4</output></div>
+      <div class="ctl"><label for="Zoom">Zoom</label><input type="range" id="Zoom" min="0" max="3" value="0"><output>0</output></div>
+      <div class="ctl"><label for="FlipMirror">Flip/mirror</label><input type="range" id="FlipMirror" min="0" max="3" value="3"><output>3</output></div>
+      <div class="ctl"><label for="Infrared">LED / IR</label><input type="range" id="Infrared" min="0" max="2" value="0"><output>0</output></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <label class="chip" for="FrameSize" style="border:none;padding-left:0">Size</label>
+      <select id="FrameSize"></select>
+      <label class="chip" for="FrameRate" style="border:none">Rate</label>
+      <select id="FrameRate"></select>
+      <label class="chip" for="BitRate" style="border:none">Bitrate</label>
+      <select id="BitRate"></select>
+    </div>
+    <p class="note">
+      Every change here restarts the picture, which takes a second or two. That is deliberate:
+      these cameras refuse most changes made while they are streaming, and a few stop sending
+      altogether. Run <code>eteq --probe</code> to find out which values yours really honours.
+    </p>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const video = $("video"), fallback = $("fallback"), overlay = $("overlay"), stage = $("stage");
+  const LIVE_EDGE = 0.15;      // seconds behind the newest frame we try to stay
+  const MAX_BUFFER = 4;        // seconds kept in the SourceBuffer before eviction
+
+  let toastTimer = null;
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+  }
+
+  async function api(path, body) {
+    const opts = { headers: { "X-Eteq": "1" } };
+    if (body !== undefined) {
+      opts.method = "POST";
+      opts.headers["Content-Type"] = "application/json";
+      opts.body = JSON.stringify(body);
+    }
+    const res = await fetch(path, opts);
+    if (!res.ok) throw new Error(path + " -> " + res.status);
+    return res.json();
+  }
+
+  // ---- live video over Media Source Extensions ----------------------------
+  // The server sends an fMP4 init segment followed by one segment per frame.
+  // Nothing is transcoded: these are the camera's own H.264 frames rewrapped.
+
+  let sourceBuffer = null, pending = [], evictAt = 0, gotFirst = false;
+
+  function flush() {
+    if (!sourceBuffer || sourceBuffer.updating || !pending.length) return;
+    try {
+      sourceBuffer.appendBuffer(pending.shift());
+    } catch (err) {
+      if (err && err.name === "QuotaExceededError") {
+        evict(true);
+      } else {
+        console.error("append failed", err);
+      }
+    }
+  }
+
+  function evict(force) {
+    if (!sourceBuffer || sourceBuffer.updating || !sourceBuffer.buffered.length) return;
+    const start = sourceBuffer.buffered.start(0);
+    const end = sourceBuffer.buffered.end(sourceBuffer.buffered.length - 1);
+    if (!force && end - start < MAX_BUFFER) return;
+    const cut = Math.max(start, end - (force ? 2 : MAX_BUFFER / 2));
+    if (cut > start + 0.2) {
+      try { sourceBuffer.remove(start, cut); } catch (e) { /* buffer busy */ }
+    }
+  }
+
+  function buffered() {
+    // In MSE mode the source buffer is authoritative; progressive playback only
+    // has the element's own ranges.
+    return sourceBuffer ? sourceBuffer.buffered : video.buffered;
+  }
+
+  function liveEdge() {
+    const b = buffered();
+    return b.length ? b.end(b.length - 1) : null;
+  }
+
+  function keepLive() {
+    const end = liveEdge();
+    if (end === null) return;
+    const b = buffered();
+    const drift = end - video.currentTime;
+    if (drift > 1.2 || video.currentTime < b.start(0)) {
+      video.currentTime = Math.max(b.start(0), end - LIVE_EDGE);
+    } else if (drift > 0.45) {
+      video.playbackRate = 1.25;         // ease back instead of jumping
+    } else if (video.playbackRate !== 1) {
+      video.playbackRate = 1;
+    }
+    if (video.paused) video.play().catch(() => {});
+  }
+
+  // Media Source Extensions give the lowest latency and let us drop old data,
+  // but attaching one does not work everywhere, so every step has a time limit
+  // and falls through to the next approach rather than hanging.
+
+  function withTimeout(promise, ms, fallbackValue) {
+    return Promise.race([promise, new Promise((r) => setTimeout(() => r(fallbackValue), ms))]);
+  }
+
+  async function startMse(codec) {
+    if (!("MediaSource" in window)) return false;
+    const mime = 'video/mp4; codecs="' + codec + '"';
+    if (!MediaSource.isTypeSupported(mime)) {
+      console.warn("this browser cannot decode", mime);
+      return false;
+    }
+
+    const ms = new MediaSource();
+    const url = URL.createObjectURL(ms);
+    video.src = url;
+
+    const opened = await withTimeout(
+      new Promise((r) => ms.addEventListener("sourceopen", () => r(true), { once: true })),
+      4000,
+      false
+    );
+    if (!opened) {
+      console.warn("the media source never opened; falling back");
+      URL.revokeObjectURL(url);
+      video.removeAttribute("src");
+      video.load();
+      return false;
+    }
+
+    try {
+      sourceBuffer = ms.addSourceBuffer(mime);
+      sourceBuffer.mode = "sequence";
+      sourceBuffer.addEventListener("updateend", () => { flush(); evict(false); });
+    } catch (err) {
+      console.warn("addSourceBuffer failed", err);
+      return false;
+    }
+
+    const res = await fetch("/stream.mp4");
+    if (!res.ok || !res.body) return false;
+    const reader = res.body.getReader();
+
+    (async function pump() {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!gotFirst) {
+          gotFirst = true;
+          overlay.classList.add("hidden");
+        }
+        pending.push(value);
+        if (pending.length > 240) pending.splice(0, pending.length - 240);
+        flush();
+      }
+      setState("dead", "stream ended");
+    })().catch((err) => {
+      console.error(err);
+      setState("dead", "stream error");
+    });
+
+    setInterval(keepLive, 250);
+    return withTimeout(
+      new Promise((r) => video.addEventListener("loadeddata", () => r(true), { once: true })),
+      8000,
+      false
+    );
+  }
+
+  async function startProgressive() {
+    // The same endpoint, handed straight to the browser. Higher latency, but it
+    // needs nothing beyond ordinary video playback.
+    sourceBuffer = null;
+    video.src = "/stream.mp4";
+    video.play().catch(() => {});
+    const ok = await withTimeout(
+      new Promise((r) => video.addEventListener("loadeddata", () => r(true), { once: true })),
+      8000,
+      false
+    );
+    if (!ok) {
+      video.removeAttribute("src");
+      video.load();
+      return false;
+    }
+    overlay.classList.add("hidden");
+    gotFirst = true;
+    setInterval(keepLive, 1000);
+    return true;
+  }
+
+  function startMjpeg(reason) {
+    video.hidden = true;
+    fallback.hidden = false;
+    fallback.src = "/mjpeg";
+    fallback.onload = () => overlay.classList.add("hidden");
+    fallback.onerror = () => {
+      overlay.classList.remove("hidden");
+      $("overlay-text").innerHTML =
+        "This browser could not play the camera's video (" + reason + ")," +
+        "<br>and the MJPEG fallback needs ffmpeg plus <code>--mjpeg</code> on the command line." +
+        "<br><br>Open <b>http://127.0.0.1:" + location.port + "/stream.mp4</b> in VLC," +
+        "<br>or restart with <b>--player ffplay</b> for a native window.";
+    };
+    $("overlay-text").textContent = "Trying the MJPEG fallback (" + reason + ")...";
+  }
+
+  // ---- status -------------------------------------------------------------
+
+  function setState(cls, text) {
+    $("dot").className = "dot " + cls;
+    $("state").textContent = text;
+  }
+
+  let lastBytes = null, lastFrames = null, lastAt = null;
+  async function poll() {
+    let s;
+    try {
+      s = await api("/api/status");
+    } catch (e) {
+      setState("dead", "relay unreachable");
+      return;
+    }
+    const now = performance.now() / 1000;
+    if (lastAt !== null && now > lastAt) {
+      const dt = now - lastAt;
+      $("fps").textContent = ((s.video_frames - lastFrames) / dt).toFixed(1);
+      $("rate").textContent = (((s.video_bytes - lastBytes) * 8) / dt / 1e6).toFixed(2) + " Mb/s";
+    }
+    lastAt = now; lastFrames = s.video_frames; lastBytes = s.video_bytes;
+
+    $("size").textContent = s.width ? s.width + "x" + s.height : "-";
+    $("frames").textContent = s.video_frames;
+    $("drops").textContent = s.rx_duplicates;
+    const age = s.last_rx_age_s;
+    if (age === null || age === undefined) setState("dead", "no camera");
+    else if (age < 1.5) setState("live", "live, session " + s.sessions);
+    else if (age < 5) setState("stale", "stalled " + age.toFixed(1) + "s");
+    else setState("dead", "camera silent");
+
+    $("rec").textContent = s.recording ? "Stop recording" : "Record";
+    $("rec").className = s.recording ? "rec" : "";
+    if (s.params) {
+      for (const [k, v] of Object.entries(s.params)) {
+        const el = $(k);
+        if (el && document.activeElement !== el) {
+          el.value = v;
+          if (el.nextElementSibling && el.nextElementSibling.tagName === "OUTPUT") {
+            el.nextElementSibling.value = v;
+          }
+        }
+      }
+    }
+  }
+
+  // ---- controls -----------------------------------------------------------
+
+  function wireSlider(id) {
+    const el = $(id);
+    if (!el) return;
+    const out = el.nextElementSibling;
+    el.addEventListener("input", () => { if (out) out.value = el.value; });
+    el.addEventListener("change", async () => {
+      try {
+        await api("/api/set", { [id]: Number(el.value) });
+        toast(id + " = " + el.value);
+      } catch (e) { toast("failed to set " + id); }
+    });
+  }
+  ["Brightness", "Contrast", "Saturation", "Zoom", "FlipMirror", "Infrared"].forEach(wireSlider);
+
+  function fillSelect(id, values, format, current) {
+    const el = $(id);
+    el.innerHTML = "";
+    for (const v of values) {
+      const opt = document.createElement("option");
+      opt.value = String(v);
+      opt.textContent = format(v);
+      el.appendChild(opt);
+    }
+    if (current !== undefined) el.value = String(current);
+    el.addEventListener("change", async () => {
+      try {
+        await api("/api/set", { [id]: Number(el.value) });
+        toast(id + " = " + el.options[el.selectedIndex].textContent);
+      } catch (e) { toast("failed to set " + id); }
+    });
+  }
+
+  $("snap").addEventListener("click", () => {
+    const w = video.videoWidth, h = video.videoHeight;
+    if (!w) { toast("no frame yet"); return; }
+    const canvas = document.createElement("canvas");
+    // Save at the displayed aspect so the file matches what you are looking at.
+    const stretch = stage.classList.contains("fit43");
+    canvas.width = w;
+    canvas.height = stretch ? Math.round((w * 3) / 4) : h;
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      const a = document.createElement("a");
+      const t = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      a.href = URL.createObjectURL(blob);
+      a.download = "eteq-" + t + ".png";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      toast("snapshot saved");
+    }, "image/png");
+  });
+
+  $("rec").addEventListener("click", async () => {
+    try {
+      const r = await api("/api/record", {});
+      toast(r.recording ? "recording to " + r.path : "recording stopped");
+      poll();
+    } catch (e) { toast("recording failed"); }
+  });
+
+  $("full").addEventListener("click", () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else stage.requestFullscreen && stage.requestFullscreen();
+  });
+
+  $("aspect").addEventListener("click", () => {
+    const native = stage.classList.toggle("native");
+    stage.classList.toggle("fit43", !native);
+    $("aspect").textContent = "Aspect: " + (native ? "native" : "4:3");
+  });
+
+  $("relive").addEventListener("click", () => {
+    const end = liveEdge();
+    if (end === null) { toast("nothing buffered yet"); return; }
+    video.currentTime = Math.max(0, end - 0.05);
+    video.play().catch(() => {});
+    toast("jumped to live");
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+    if (e.key === "s") $("snap").click();
+    else if (e.key === "r") $("rec").click();
+    else if (e.key === "f") $("full").click();
+  });
+
+  // ---- boot ---------------------------------------------------------------
+
+  (async function () {
+    let info = {};
+    try { info = await api("/api/stream-info"); } catch (e) { /* the server may still be starting */ }
+    fillSelect("FrameSize", info.frame_sizes || [], (v) => ((v >> 16) + "x" + (v & 0xffff)), info.params && info.params.FrameSize);
+    fillSelect("FrameRate", info.frame_rates || [], (v) => v + " fps", info.params && info.params.FrameRate);
+    fillSelect("BitRate", info.bit_rates || [], (v) => v + " kb/s", info.params && info.params.BitRate);
+
+    // Status polling starts first so the page stays informative even if no
+    // playback method works.
+    poll();
+    setInterval(poll, 1000);
+
+    const codec = info.codec || "avc1.42001E";
+    let mode = null;
+    try {
+      if (await startMse(codec)) mode = "direct";
+    } catch (e) { console.warn("media source path failed", e); }
+    if (!mode) {
+      try {
+        if (await startProgressive()) mode = "progressive";
+      } catch (e) { console.warn("progressive path failed", e); }
+    }
+    if (!mode) {
+      startMjpeg("no built-in playback path worked");
+      mode = "mjpeg";
+    }
+    console.info("eteq playback mode:", mode);
+    $("mode").textContent = mode;
+  })();
+})();
+</script>
+</body>
+</html>

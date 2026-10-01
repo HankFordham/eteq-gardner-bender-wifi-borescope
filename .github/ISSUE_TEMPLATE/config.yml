@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Protocol documentation
+    url: https://github.com/HankFordham/eteq-gardner-bender-wifi-borescope/blob/main/docs/PROTOCOL.md
+    about: How the OV780 camera protocol works, before filing a protocol question.
+  - name: Questions and discussion
+    url: https://github.com/HankFordham/eteq-gardner-bender-wifi-borescope/discussions
+    about: Usage questions, "is my camera supported?", and general discussion.

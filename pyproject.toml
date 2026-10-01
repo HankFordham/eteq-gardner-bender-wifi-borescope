@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eteq-cam"
+dynamic = ["version"]
+description = "Live video from cheap OV780 WiFi inspection cameras and borescopes (Gardner Bender eTEQ WIC-100 and rebrands) -- browser, ffplay, or file. No runtime dependencies."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "eteq-cam contributors" }]
+keywords = [
+    "borescope",
+    "endoscope",
+    "inspection-camera",
+    "ov780",
+    "omnivision",
+    "wifi-camera",
+    "h264",
+    "rtsp-alternative",
+    "eteq",
+    "wic-100",
+    "video",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Multimedia :: Video :: Capture",
+    "Topic :: System :: Networking",
+]
+# Pure standard library at runtime -- deliberately empty.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "pyinstaller"]
+
+[project.scripts]
+eteq = "eteq.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/HankFordham/eteq-gardner-bender-wifi-borescope"
+Repository = "https://github.com/HankFordham/eteq-gardner-bender-wifi-borescope"
+Issues = "https://github.com/HankFordham/eteq-gardner-bender-wifi-borescope/issues"
+Changelog = "https://github.com/HankFordham/eteq-gardner-bender-wifi-borescope/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/HankFordham/eteq-gardner-bender-wifi-borescope/blob/main/docs/PROTOCOL.md"
+
+[tool.setuptools.dynamic]
+version = { attr = "eteq.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# The browser player is a data file served by the built-in HTTP server.
+eteq = ["web/*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E501",   # line length is enforced by the formatter, not the linter
+    "B905",   # zip(strict=...) is not available on Python 3.9
+    "B008",   # function call in default argument -- used intentionally
+    "E741",   # ambiguous variable names are fine in bit-twiddling code
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["eteq"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
