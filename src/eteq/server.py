@@ -34,25 +34,42 @@ from .protocol import BIT_RATES, FRAME_RATES, FRAME_SIZES, frame_size_value
 
 log = logging.getLogger(__name__)
 
-MAX_CLIENT_BACKLOG = 600
-"""Segments queued for one slow browser before we start dropping its frames."""
+MAX_CLIENT_BACKLOG = 90
+"""Segments held for one client before old ones are dropped.
+
+About three seconds at thirty frames a second. A live picture that is further
+behind than that is worthless, and queueing more only converts a slow consumer
+into permanent delay. When the queue fills we discard the oldest, not the newest,
+because the newest is the one the viewer wants.
+"""
 
 
 class _Client:
     """One connected browser or player."""
 
-    __slots__ = ("q", "started", "wants_init")
+    __slots__ = ("dropped", "q", "started", "wants_init")
 
     def __init__(self, wants_init: bool) -> None:
         self.q: queue.Queue[bytes | None] = queue.Queue(maxsize=MAX_CLIENT_BACKLOG)
         self.started = False
         self.wants_init = wants_init
+        self.dropped = 0
 
     def put(self, data: bytes) -> None:
         try:
             self.q.put_nowait(data)
         except queue.Full:
-            pass
+            # Make room by throwing away the stalest frames, then keep this one.
+            for _ in range(MAX_CLIENT_BACKLOG // 3):
+                try:
+                    self.q.get_nowait()
+                except queue.Empty:
+                    break
+            self.dropped += 1
+            try:
+                self.q.put_nowait(data)
+            except queue.Full:
+                pass
 
 
 class StreamHub:
