@@ -1,6 +1,8 @@
 package com.eteqcam;
 
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.Handler;
@@ -63,12 +65,13 @@ public final class VideoDecoder {
     private volatile int decodedFrames;
     private volatile int droppedFrames;
     private volatile long lastLatencyMs;
+    private volatile String decoderName = "";
 
     /** Smooth playback at the camera's own cadence, rather than as frames land. */
     private volatile boolean paced = true;
 
     /** How far ahead of the newest frame the paced clock aims to sit. */
-    private static final long LEAD_NANOS = 45_000_000L;
+    private static final long LEAD_NANOS = 30_000_000L;
 
     private long clockBaseNanos;
     private long clockBasePtsUs = -1;
@@ -128,9 +131,63 @@ public final class VideoDecoder {
         return droppedFrames;
     }
 
-    /** Milliseconds between a frame arriving from the camera and being drawn. */
+    /** Milliseconds between handing a frame to the decoder and getting it back. */
     public long lastLatencyMs() {
         return lastLatencyMs;
+    }
+
+    /** Which decoder the system gave us, useful when a device behaves oddly. */
+    public String decoderName() {
+        return decoderName;
+    }
+
+    /**
+     * Prefer a hardware decoder that advertises low latency.
+     *
+     * <p>Decoders normally pipeline two or three frames deep, which at thirty
+     * frames a second is most of a tenth of a second of delay before anything
+     * reaches the screen. Some expose a mode that shortens the pipeline, and
+     * asking for one by name is more reliable than hoping the default honours the
+     * low-latency flag.
+     *
+     * @return a codec name, or null to let the system choose
+     */
+    private static String preferredDecoder() {
+        try {
+            MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+            String hardware = null;
+            for (MediaCodecInfo info : list.getCodecInfos()) {
+                if (info.isEncoder()) {
+                    continue;
+                }
+                boolean handlesAvc = false;
+                for (String type : info.getSupportedTypes()) {
+                    if (MIME.equalsIgnoreCase(type)) {
+                        handlesAvc = true;
+                        break;
+                    }
+                }
+                if (!handlesAvc) {
+                    continue;
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !info.isHardwareAccelerated()) {
+                    continue;
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    MediaCodecInfo.CodecCapabilities caps = info.getCapabilitiesForType(MIME);
+                    if (caps != null && caps.isFeatureSupported(
+                            MediaCodecInfo.CodecCapabilities.FEATURE_LowLatency)) {
+                        return info.getName();
+                    }
+                }
+                if (hardware == null) {
+                    hardware = info.getName();
+                }
+            }
+            return hardware;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /** Hand over one access unit. Never blocks the caller. */
@@ -181,11 +238,23 @@ public final class VideoDecoder {
             // Do not hold frames back for reordering. There are no B-frames here.
             format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1);
         }
+        // Realtime, not throughput: decode each frame as it comes rather than
+        // batching for efficiency.
+        format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+        format.setInteger(MediaFormat.KEY_OPERATING_RATE, Short.MAX_VALUE);
+        // Vendor spellings of the same idea. An unknown key is ignored, so it is
+        // safe to offer several and let the device take whichever it knows.
+        format.setInteger("vendor.qti-ext-dec-low-latency.enable", 1);
+        format.setInteger("vendor.low-latency.enable", 1);
+        format.setInteger("low-latency", 1);
 
-        callbackThread = new HandlerThread("decoder-callbacks");
+        callbackThread = new HandlerThread("decoder-callbacks",
+                android.os.Process.THREAD_PRIORITY_URGENT_DISPLAY);
         callbackThread.start();
 
-        codec = MediaCodec.createDecoderByType(MIME);
+        String name = preferredDecoder();
+        codec = name != null ? MediaCodec.createByCodecName(name) : MediaCodec.createDecoderByType(MIME);
+        decoderName = codec.getName();
         codec.setCallback(new MediaCodec.Callback() {
             @Override
             public void onInputBufferAvailable(MediaCodec mc, int index) {
@@ -244,6 +313,19 @@ public final class VideoDecoder {
 
         codec.configure(format, surface, null, 0);
         codec.start();
+
+        // Some devices only accept the request once running rather than at
+        // configure time, so ask again. Unknown keys are ignored.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                android.os.Bundle runtime = new android.os.Bundle();
+                runtime.putInt(MediaFormat.KEY_LOW_LATENCY, 1);
+                runtime.putInt("vendor.qti-ext-dec-low-latency.enable", 1);
+                codec.setParameters(runtime);
+            } catch (Exception ignored) {
+                // the decoder is simply not interested
+            }
+        }
     }
 
     /** Whether to display at the camera's cadence or the instant each frame decodes. */
