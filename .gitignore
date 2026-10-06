@@ -79,3 +79,11 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 .DS_Store
+
+# Android build
+# local.properties holds this machine's SDK path and must not be shared.
+android/.gradle/
+android/local.properties
+android/.cxx/
+*.apk
+*.aab

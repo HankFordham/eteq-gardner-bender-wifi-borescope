@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- An Android app under `android/`. The phone joins the camera's WiFi and speaks
+  the protocol itself, decoding in hardware straight to the screen, so no computer
+  is involved and the delay is as low as the hardware allows. It records to MP4
+  without re-encoding and saves photos, and asks for no sensitive permissions.
 - `--lan` serves the viewer to other devices, so a phone or tablet can watch while
   the computer stays connected to the camera. Protected by a generated access key,
   and the firewall helper now opens the viewer port too.

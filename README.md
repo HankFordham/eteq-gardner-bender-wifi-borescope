@@ -20,6 +20,8 @@ working. If yours does, or does not, please
 
 ## What you get
 
+- **An Android app** that talks to the camera directly, with no computer in the
+  path and hardware decoding on the phone.
 - **Live picture in a browser**, with no transcoding. The camera's own H.264 is
   rewrapped into fragmented MP4 in a few hundred lines of Python and played by the
   browser's own decoder.
@@ -103,9 +105,20 @@ Other endpoints on the same port, useful for scripting or for VLC:
 
 ## Watching on a phone or tablet
 
-The camera accepts one client at a time and speaks only this protocol, so a phone
-cannot talk to it directly. The computer stays connected to the camera and passes
-the picture on:
+### The Android app
+
+There is a native app that talks to the camera directly, with no computer
+involved at all. It is the lowest-delay way to use these cameras, because the
+phone's own hardware decoder draws the frames straight onto the screen.
+
+Download `eteq.apk` from the
+[releases page](https://github.com/HankFordham/eteq-gardner-bender-wifi-borescope/releases/latest),
+join the camera's WiFi, and press Connect. See [android/README.md](android/README.md).
+
+### Or relay from a computer
+
+If you would rather not install anything on the phone, the computer can stay
+connected to the camera and pass the picture on:
 
 ```powershell
 .\eteq.exe --lan
