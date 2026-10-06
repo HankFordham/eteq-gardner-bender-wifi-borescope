@@ -170,7 +170,7 @@ public final class VideoDecoder {
                 if (!handlesAvc) {
                     continue;
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !info.isHardwareAccelerated()) {
+                if (!info.isHardwareAccelerated()) {
                     continue;
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

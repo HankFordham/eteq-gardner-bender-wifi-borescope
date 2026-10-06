@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stop recording. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M8,5.5 H16 A2.5,2.5 0 0 1 18.5,8 V16 A2.5,2.5 0 0 1 16,18.5 H8 A2.5,2.5 0 0 1 5.5,16 V8 A2.5,2.5 0 0 1 8,5.5 Z" />
+</vector>

@@ -7,7 +7,6 @@ import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.net.Uri;
-import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 
@@ -65,10 +64,8 @@ public final class Recorder {
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, displayName);
         values.put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4");
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            values.put(MediaStore.MediaColumns.RELATIVE_PATH, "Movies/eteq");
-            values.put(MediaStore.MediaColumns.IS_PENDING, 1);
-        }
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH, "Movies/eteq");
+        values.put(MediaStore.MediaColumns.IS_PENDING, 1);
 
         ContentResolver resolver = context.getContentResolver();
         target = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
@@ -138,7 +135,7 @@ public final class Recorder {
         closeDescriptor();
 
         if (target != null) {
-            if (finished != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (finished != null) {
                 ContentValues done = new ContentValues();
                 done.put(MediaStore.MediaColumns.IS_PENDING, 0);
                 context.getContentResolver().update(target, done, null, null);

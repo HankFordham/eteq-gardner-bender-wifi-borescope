@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A deliberately neutral instrument palette. A borescope is a measuring tool, so
+  the interface stays out of the way of the picture: near-black surfaces, one
+  accent, and warnings that read at a glance.
+-->
+<resources>
+    <color name="surface">#0E1013</color>
+    <color name="surface_raised">#1A1D23</color>
+    <color name="surface_scrim">#CC12151A</color>
+    <color name="outline">#2A2F38</color>
+    <color name="on_surface">#ECEFF4</color>
+    <color name="on_surface_muted">#98A1B0</color>
+    <color name="accent">#4FA8FF</color>
+    <color name="accent_dark">#06121F</color>
+    <color name="live">#3FD07A</color>
+    <color name="warn">#E8B341</color>
+    <color name="danger">#FF5A52</color>
+    <color name="ic_launcher_background">#0E1013</color>
+</resources>
