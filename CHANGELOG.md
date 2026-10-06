@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `--lan` serves the viewer to other devices, so a phone or tablet can watch while
+  the computer stays connected to the camera. Protected by a generated access key,
+  and the firewall helper now opens the viewer port too.
+
+### Fixed
+
+- The probe no longer reports dozens of false negatives after a camera jams. It
+  stops at that point, says so, and tests the picture settings before the sweeps
+  that are known to jam the reference camera.
+
 ## [1.0.0] - 2026-10-01
 
 First public release.

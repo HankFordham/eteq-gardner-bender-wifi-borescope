@@ -73,6 +73,7 @@ eteq --player ffplay             a native low-latency window instead (needs ffmp
 eteq --record clip.mp4           watch and record at the same time
 eteq --record clip.h264          record the camera's bytes untouched
 eteq --list-cameras              show every camera that is beaconing
+eteq --lan                       also let a phone on your network watch
 eteq --probe                     measure which settings this camera honours
 eteq --convert old.h264 new.mp4  repackage an old capture, no ffmpeg needed
 eteq --size 320x240 --fps 10     ask for a different picture
@@ -100,6 +101,34 @@ Other endpoints on the same port, useful for scripting or for VLC:
 & "C:\Program Files\VideoLAN\VLC\vlc.exe" http://127.0.0.1:8090/stream.mp4
 ```
 
+## Watching on a phone or tablet
+
+The camera accepts one client at a time and speaks only this protocol, so a phone
+cannot talk to it directly. The computer stays connected to the camera and passes
+the picture on:
+
+```powershell
+.\eteq.exe --lan
+```
+
+That prints a link and a short access key. Open the link on the phone. The page is
+built for a phone screen, and the snapshot button saves to the phone.
+
+The phone needs a way to reach the computer that is not the camera's own network.
+Either of these works:
+
+- **At home:** plug the computer into your router with an Ethernet cable and put
+  the phone on your normal WiFi.
+- **Anywhere, no router needed:** plug the phone into the computer with a USB
+  cable and turn on USB tethering on the phone. That makes a private network
+  between just those two devices. The phone does not need mobile data for this.
+
+Run `eteq --install-firewall-rule` once, which also opens the viewer port.
+
+Anyone on that network who has the key can watch and control the camera. Use
+`--key` to choose your own, or `--no-key` to drop the check entirely, which is
+only sensible on a USB tether where nothing else is connected.
+
 ## Does it work with my camera?
 
 If your camera creates a WiFi network and its app is one of the "WiFi Tool",
@@ -110,7 +139,7 @@ Known to work:
 
 | Camera | Picture | Notes |
 | --- | --- | --- |
-| Gardner Bender eTEQ WIC-100 | 640x240 H.264, ~30 fps | the reference device. Only 640x240 works; other sizes and frame rates stop the encoder |
+| Gardner Bender eTEQ WIC-100 | 640x240 H.264, ~30 fps | the reference device. 640x240 only. Asking for any other size or frame rate jams the encoder until the batteries are pulled |
 
 Please add yours by opening a
 [camera report](https://github.com/HankFordham/eteq-gardner-bender-wifi-borescope/issues/new/choose) with the

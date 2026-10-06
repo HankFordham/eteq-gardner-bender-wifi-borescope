@@ -22,7 +22,9 @@ from __future__ import annotations
 import json
 import logging
 import queue
+import secrets
 import threading
+import urllib.parse
 from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -152,8 +154,11 @@ class CameraHTTPServer:
         record_fn: Callable[[], dict[str, Any]] | None = None,
         mjpeg_fn: Callable[[], Any] | None = None,
         host: str = "127.0.0.1",
+        token: str | None = None,
     ) -> None:
         self.hub = hub
+        self.token = token
+        self.allow_lan = False
         self.status_fn = status_fn
         self.set_fn = set_fn
         self.record_fn = record_fn
@@ -187,9 +192,24 @@ class CameraHTTPServer:
             def _json(self, payload: dict[str, Any], code: int = 200) -> None:
                 self._send(code, "application/json", json.dumps(payload).encode())
 
-            def _local_only(self) -> bool:
-                """Reject anything that did not come from this machine."""
+            def _is_loopback(self) -> bool:
                 return self.client_address[0] in ("127.0.0.1", "::1")
+
+            def _authorised(self) -> bool:
+                """This machine is always allowed; anything else needs the key.
+
+                Serving to a phone means serving to the whole network the phone is
+                on, so the key stops the neighbours watching down your drain.
+                """
+                if self._is_loopback():
+                    return True
+                if server.token is None:
+                    return server.allow_lan
+                supplied = self.headers.get("X-Eteq-Key")
+                if supplied is None:
+                    query = urllib.parse.urlparse(self.path).query
+                    supplied = urllib.parse.parse_qs(query).get("k", [None])[0]
+                return bool(supplied) and secrets.compare_digest(supplied, server.token)
 
             def _csrf_ok(self) -> bool:
                 """A custom header cannot be set by a cross-origin form post.
@@ -237,8 +257,8 @@ class CameraHTTPServer:
             # -- routes ------------------------------------------------------
 
             def do_GET(self) -> None:  # noqa: N802 - name fixed by BaseHTTPRequestHandler
-                if not self._local_only():
-                    self.send_error(403)
+                if not self._authorised():
+                    self.send_error(403, "wrong or missing access key")
                     return
                 path = self.path.split("?", 1)[0]
 
@@ -286,8 +306,8 @@ class CameraHTTPServer:
                 # unread body left on a keep-alive connection desynchronises it
                 # and the next request on that socket dies.
                 payload = self._read_json()
-                if not self._local_only():
-                    self.send_error(403)
+                if not self._authorised():
+                    self.send_error(403, "wrong or missing access key")
                     return
                 if not self._csrf_ok():
                     self._json({"error": "missing X-Eteq header"}, 403)
@@ -357,12 +377,18 @@ class CameraHTTPServer:
                     return
                 self._send(200, "image/jpeg", jpg, {"Content-Disposition": 'inline; filename="eteq.jpg"'})
 
+        self.allow_lan = host not in ("127.0.0.1", "localhost", "::1")
         self.httpd = ThreadingHTTPServer((host, port), Handler)
         self.httpd.daemon_threads = True
         self.port = self.httpd.server_address[1]
         self.thread = threading.Thread(target=self.httpd.serve_forever, name="http", daemon=True)
         self.thread.start()
         log.info("player ready at http://%s:%d/", host, self.port)
+
+    def urls(self, addresses: list[str]) -> list[str]:
+        """The addresses a browser elsewhere on the network should use."""
+        suffix = f"/?k={self.token}" if self.token else "/"
+        return [f"http://{addr}:{self.port}{suffix}" for addr in addresses]
 
     def close(self) -> None:
         self.hub.close()

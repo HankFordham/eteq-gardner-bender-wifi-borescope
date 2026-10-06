@@ -145,6 +145,11 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const video = $("video"), fallback = $("fallback"), overlay = $("overlay"), stage = $("stage");
+  // When the page is opened from another device the server hands out an access
+  // key in the URL. Everything this page asks for has to carry it.
+  const KEY = new URLSearchParams(location.search).get("k") || "";
+  const withKey = (path) => (KEY ? path + (path.includes("?") ? "&" : "?") + "k=" + encodeURIComponent(KEY) : path);
+
   const LIVE_EDGE = 0.15;      // seconds behind the newest frame we try to stay
   const MAX_BUFFER = 4;        // seconds kept in the SourceBuffer before eviction
 
@@ -159,6 +164,7 @@
 
   async function api(path, body) {
     const opts = { headers: { "X-Eteq": "1" } };
+    if (KEY) opts.headers["X-Eteq-Key"] = KEY;
     if (body !== undefined) {
       opts.method = "POST";
       opts.headers["Content-Type"] = "application/json";
@@ -267,7 +273,7 @@
       return false;
     }
 
-    const res = await fetch("/stream.mp4");
+    const res = await fetch(withKey("/stream.mp4"), KEY ? { headers: { "X-Eteq-Key": KEY } } : undefined);
     if (!res.ok || !res.body) return false;
     const reader = res.body.getReader();
 
@@ -301,7 +307,7 @@
     // The same endpoint, handed straight to the browser. Higher latency, but it
     // needs nothing beyond ordinary video playback.
     sourceBuffer = null;
-    video.src = "/stream.mp4";
+    video.src = withKey("/stream.mp4");
     video.play().catch(() => {});
     const ok = await withTimeout(
       new Promise((r) => video.addEventListener("loadeddata", () => r(true), { once: true })),
@@ -322,7 +328,7 @@
   function startMjpeg(reason) {
     video.hidden = true;
     fallback.hidden = false;
-    fallback.src = "/mjpeg";
+    fallback.src = withKey("/mjpeg");
     fallback.onload = () => overlay.classList.add("hidden");
     fallback.onerror = () => {
       overlay.classList.remove("hidden");
