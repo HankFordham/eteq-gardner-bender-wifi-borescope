@@ -1,99 +1,259 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+  One screen. The picture fills it and everything else is overlaid, then gets out
+  of the way: the bars fade after a few seconds and come back on a tap, so most of
+  the time you are looking at the camera and nothing else.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
-    android:fitsSystemWindows="true">
+    android:background="#000000">
 
-    <FrameLayout
-        android:id="@+id/videoHolder"
+    <!-- Sized in code to the picture's shape, and scaled by pinch. -->
+    <SurfaceView
+        android:id="@+id/video"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- A brief white wash when a photo is taken. -->
+    <View
+        android:id="@+id/flash"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="#FFFFFFFF"
+        android:alpha="0"
+        android:visibility="invisible"/>
 
-        <!-- SurfaceView, not TextureView: its buffers go straight to the display
-             compositor instead of through the view hierarchy, which is one less
-             copy and one less frame of delay. Snapshots use PixelCopy. -->
-        <SurfaceView
-            android:id="@+id/video"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"/>
-    </FrameLayout>
-
-    <TextView
-        android:id="@+id/message"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:gravity="center"
-        android:padding="28dp"
-        android:lineSpacingMultiplier="1.4"
-        android:textColor="#949CAD"
-        android:textSize="15sp"
-        android:text="Join the camera's WiFi, then press Connect."/>
-
-    <TextView
-        android:id="@+id/status"
+    <View
+        android:id="@+id/scrimTop"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:background="#CC171A21"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
-        android:textColor="#E8EAF0"
-        android:textSize="13sp"
-        android:fontFamily="monospace"
-        android:text="not connected"/>
+        android:layout_height="150dp"
+        android:background="@drawable/bg_scrim_top"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <View
+        android:id="@+id/scrimBottom"
+        android:layout_width="match_parent"
+        android:layout_height="190dp"
+        android:background="@drawable/bg_scrim_bottom"
+        app:layout_constraintBottom_toBottomOf="parent"/>
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/topBar"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:background="#CC171A21"
         android:orientation="horizontal"
-        android:padding="10dp">
+        android:gravity="center_vertical"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="10dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <Button
-            android:id="@+id/connect"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:id="@+id/statusPill"
+            style="@style/Pill"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="6dp"
-            android:text="Connect"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-        <Button
-            android:id="@+id/snapshot"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="6dp"
-            android:enabled="false"
-            android:text="Photo"/>
+            <View
+                android:id="@+id/statusDot"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginEnd="7dp"
+                android:background="@drawable/bg_dot"/>
 
-        <Button
-            android:id="@+id/record"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="6dp"
-            android:enabled="false"
-            android:text="Rec"/>
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/on_surface"
+                android:textSize="12sp"
+                android:text="@string/state_idle"/>
+        </LinearLayout>
 
-        <Button
-            android:id="@+id/aspect"
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/sizePill"
+            style="@style/Pill"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="6dp"
-            android:text="4:3"/>
+            android:layout_marginStart="6dp"
+            android:visibility="gone"/>
 
-        <Button
-            android:id="@+id/pacing"
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/fpsPill"
+            style="@style/Pill"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Smooth"/>
+            android:layout_marginStart="6dp"
+            android:visibility="gone"/>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"/>
+
+        <LinearLayout
+            android:id="@+id/recordChip"
+            style="@style/Pill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginEnd="7dp"
+                android:background="@drawable/bg_dot_record"/>
+
+            <TextView
+                android:id="@+id/recordTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/on_surface"
+                android:textSize="12sp"
+                android:fontFamily="monospace"
+                android:text="@string/zero_time"/>
+        </LinearLayout>
     </LinearLayout>
-</FrameLayout>
+
+    <!-- Developer detail, off by default -->
+    <TextView
+        android:id="@+id/diagnostics"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_pill"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:fontFamily="monospace"
+        android:textSize="11sp"
+        android:textColor="@color/on_surface_muted"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/topBar"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <!-- What to do when there is nothing to show -->
+    <LinearLayout
+        android:id="@+id/emptyState"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingStart="36dp"
+        android:paddingEnd="36dp"
+        app:layout_constraintWidth_max="430dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:id="@+id/emptyIcon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:alpha="0.75"
+            android:src="@drawable/ic_wifi_off"
+            app:tint="@color/on_surface_muted"
+            android:contentDescription="@null"/>
+
+        <TextView
+            android:id="@+id/emptyTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:textColor="@color/on_surface"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:text="@string/empty_title"/>
+
+        <TextView
+            android:id="@+id/emptyBody"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:lineSpacingMultiplier="1.35"
+            android:textColor="@color/on_surface_muted"
+            android:textSize="14sp"
+            android:text="@string/empty_body"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/controls"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingBottom="12dp"
+        app:layout_constraintWidth_max="560dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/shutter"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginEnd="6dp"
+            android:enabled="false"
+            app:icon="@drawable/ic_shutter"
+            app:iconSize="26dp"
+            app:iconTint="@color/on_surface"
+            android:contentDescription="@string/action_photo"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/record"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginEnd="10dp"
+            android:enabled="false"
+            app:icon="@drawable/ic_record"
+            app:iconSize="26dp"
+            app:iconTint="@color/danger"
+            android:contentDescription="@string/action_record"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/connect"
+            style="@style/Widget.Material3.Button.Icon"
+            android:layout_width="74dp"
+            android:layout_height="60dp"
+            app:icon="@drawable/ic_play"
+            app:iconSize="30dp"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:cornerRadius="22dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:contentDescription="@string/action_connect"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/settings"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="10dp"
+            app:icon="@drawable/ic_tune"
+            app:iconSize="26dp"
+            app:iconTint="@color/on_surface"
+            android:contentDescription="@string/action_settings"/>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

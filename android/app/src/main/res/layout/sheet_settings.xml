@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Everything that is not needed while actually looking down a pipe. Grouped so the
+  harmless preferences sit above the camera settings, which carry a real warning.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_sheet"
+    android:paddingBottom="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="22dp"
+        android:paddingEnd="22dp">
+
+        <View
+            android:layout_width="36dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_pill"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/settings_title"
+            android:textColor="@color/on_surface"
+            android:textSize="21sp"
+            android:textStyle="bold"/>
+
+        <!-- Display -->
+        <TextView
+            style="@style/SectionLabel"
+            android:text="@string/settings_picture"/>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchShape"
+            style="@style/SettingSwitch"
+            android:drawableStart="@drawable/ic_aspect"
+            android:text="@string/settings_shape_43"/>
+
+        <TextView
+            style="@style/SettingHelp"
+            android:text="@string/settings_shape_native"/>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchMotion"
+            style="@style/SettingSwitch"
+            android:drawableStart="@drawable/ic_waves"
+            android:text="@string/settings_motion"/>
+
+        <TextView
+            style="@style/SettingHelp"
+            android:text="@string/settings_motion_help"/>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchScreenOn"
+            style="@style/SettingSwitch"
+            android:drawableStart="@drawable/ic_speed"
+            android:text="@string/settings_screen_on"/>
+
+        <TextView
+            style="@style/SettingHelp"
+            android:text="@string/settings_screen_on_help"/>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchDiagnostics"
+            style="@style/SettingSwitch"
+            android:drawableStart="@drawable/ic_info"
+            android:text="@string/settings_diagnostics"/>
+
+        <TextView
+            style="@style/SettingHelp"
+            android:text="@string/settings_diagnostics_help"/>
+
+        <!-- Camera -->
+        <TextView
+            style="@style/SectionLabel"
+            android:text="@string/settings_camera"/>
+
+        <TextView
+            style="@style/SettingHelp"
+            android:layout_marginTop="0dp"
+            android:text="@string/settings_camera_help"/>
+
+        <TextView
+            style="@style/SettingLabel"
+            android:text="@string/settings_led"/>
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/ledGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/led0"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/led_off"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/led1"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/led_low"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/led2"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/led_high"/>
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <TextView
+            style="@style/SettingLabel"
+            android:text="@string/settings_flip"/>
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/flipGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/flip0"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/flip_normal"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/flip1"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/flip_mirror"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/flip2"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/flip_flip"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/flip3"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/flip_both"/>
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <!-- Elsewhere -->
+        <TextView
+            style="@style/SectionLabel"
+            android:text="@string/settings_about"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/openGallery"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:icon="@drawable/ic_gallery"
+            android:text="@string/settings_saved"/>
+
+        <TextView
+            android:id="@+id/aboutText"
+            style="@style/SettingHelp"
+            android:fontFamily="monospace"
+            android:textSize="11sp"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/closeSheet"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:icon="@drawable/ic_close"
+            android:text="@string/settings_close"/>
+    </LinearLayout>
+</ScrollView>

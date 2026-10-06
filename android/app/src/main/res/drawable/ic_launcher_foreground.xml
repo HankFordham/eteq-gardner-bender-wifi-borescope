@@ -1,10 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App icon foreground: a borescope probe curving up to its camera head.
+     The probe is the accent blue, the LED ring and lens the near-white,
+     so the head reads against the near-black launcher background. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#4F9CFF"
-        android:pathData="M54,32m-13,0a13,13 0,1 1,26 0a13,13 0,1 1,-26 0"/>
-    <path android:fillColor="#E8EAF0"
-        android:pathData="M54,32m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
-    <path android:fillColor="#4F9CFF"
-        android:pathData="M50,46h8v30h-8z"/>
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:strokeColor="#FF4FA8FF"
+        android:strokeWidth="8.5"
+        android:strokeLineCap="round"
+        android:pathData="M27,83 C25,65 35,53 59.5,45" />
+    <path
+        android:fillColor="#FF4FA8FF"
+        android:pathData="M70,22 A15,15 0 1 1 70,52 A15,15 0 1 1 70,22 Z" />
+    <path
+        android:strokeColor="#FFECEFF4"
+        android:strokeWidth="3.5"
+        android:pathData="M70,27.5 A9.5,9.5 0 1 1 70,46.5 A9.5,9.5 0 1 1 70,27.5 Z" />
+    <path
+        android:fillColor="#FFECEFF4"
+        android:pathData="M70,31.75 A5.25,5.25 0 1 1 70,42.25 A5.25,5.25 0 1 1 70,31.75 Z" />
 </vector>

@@ -20,12 +20,38 @@ hop.
 
 No account, no permissions prompt, no network access beyond the camera.
 
+## The screen
+
+The picture fills the display and everything else is overlaid on it, then gets out
+of the way: the bars and the controls fade a few seconds after you stop touching
+them, and the system bars go with them. A tap brings them back.
+
+Along the bottom are four controls: take a photo, record, connect, and settings.
+Everything that is set once rather than used constantly lives in the settings
+sheet, so the bar stays uncluttered.
+
+- **Pinch to zoom**, up to eight times, and drag to move around. Double tap to go
+  straight in or back out, which is faster than pinching when one hand is holding
+  the probe.
+- **Photos** flash the screen, buzz, and save to `Pictures/eteq`. Recordings go to
+  `Movies/eteq`, with a running timer in the corner, and neither is re-encoded.
+- **Status** is three small pills: a coloured dot for the connection, the picture
+  size, and the frame rate. Turning on diagnostics adds a line with the delay in
+  milliseconds, dropped frames and the decoder in use.
+- **Settings** holds the picture shape, the motion preference, whether the screen
+  stays awake, diagnostics, and the camera's own light and flip settings, with a
+  plain warning that those restart the picture and that many cameras refuse them.
+
+The app is dark throughout, because it is for looking at a dimly lit picture, and
+uses one accent colour rather than following the system theme, so the interface
+looks the same on every phone.
+
 ## Why the app asks for nothing
 
-It declares four permissions, all of them granted automatically at install:
-internet access, the ability to read network state, and the ability to choose
-which network a socket uses. It never asks for the camera, the microphone,
-location or files. Photos and recordings are written through the system media
+It declares five permissions, all granted automatically at install and none of
+them the kind Android prompts about: internet access, reading network state,
+reading WiFi state, choosing which network a socket uses, and holding a WiFi lock.
+It never asks for the camera, the microphone, location or files. Photos and recordings are written through the system media
 store, which needs no permission for an app's own files.
 
 ## The one hard part

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A rebuilt interface for the Android app: Material 3 throughout, the picture
+  edge to edge with controls that fade away, pinch to zoom and pan, a settings
+  sheet, status pills, a recording timer, and a diagnostics overlay. Despite
+  gaining a user interface framework the app got smaller, from 2.2 MB to 1.6 MB,
+  by shrinking unused code and resources.
 - An Android app under `android/`. The phone joins the camera's WiFi and speaks
   the protocol itself, decoding in hardware straight to the screen, so no computer
   is involved and the delay is as low as the hardware allows. It records to MP4

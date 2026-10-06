@@ -8,7 +8,6 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.RouteInfo;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -78,11 +77,9 @@ public final class CameraNetwork {
         if (wifiManager == null || wifiLock != null) {
             return;
         }
-        int mode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
-                ? WifiManager.WIFI_MODE_FULL_LOW_LATENCY
-                : WifiManager.WIFI_MODE_FULL_HIGH_PERF;
         try {
-            wifiLock = wifiManager.createWifiLock(mode, "eteq:stream");
+            wifiLock = wifiManager.createWifiLock(
+                    WifiManager.WIFI_MODE_FULL_LOW_LATENCY, "eteq:stream");
             wifiLock.setReferenceCounted(false);
             wifiLock.acquire();
         } catch (Exception ignored) {
