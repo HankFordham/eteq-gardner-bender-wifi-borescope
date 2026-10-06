@@ -2,6 +2,14 @@ plugins {
     id 'com.android.application'
 }
 
+// Release signing details live outside version control. Without them the build
+// still works and simply produces an unsigned release artifact.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+
 android {
     namespace 'com.eteqcam'
     compileSdk 36
@@ -19,9 +27,23 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    signingConfigs {
+        if (keystoreProperties.containsKey('storeFile')) {
+            release {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
+            if (keystoreProperties.containsKey('storeFile')) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

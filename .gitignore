@@ -87,3 +87,8 @@ android/local.properties
 android/.cxx/
 *.apk
 *.aab
+
+# Android signing. Losing these means never being able to update the app;
+# publishing them means anyone can impersonate it. Keep them, do not share them.
+android/release.keystore
+android/keystore.properties
