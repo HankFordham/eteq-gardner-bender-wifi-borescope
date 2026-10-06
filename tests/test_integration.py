@@ -436,3 +436,42 @@ class TestUnreachableCamera:
             session.stop()
             thread.join(timeout=5)
             server.close()
+
+
+class TestCameraThatNeverStarts:
+    """A jammed camera completes the handshake and then sends nothing at all.
+
+    It still acknowledges packets and still answers the heartbeat, so neither the
+    "no packets" timer nor the "video stopped" timer fires: the latter is only
+    armed once a first frame has arrived. Without a separate clock from the
+    moment the stream is requested, the session waits for ever.
+    """
+
+    def test_gives_up_and_says_it_is_jammed(self, camera, caplog):
+        import logging as _logging
+
+        cam, port = camera
+        cam.ignore_start = True  # acknowledge Video=1, never encode
+        session = make_session(port, None, first_frame_timeout=1.5, video_timeout=1.5)
+        with caplog.at_level(_logging.ERROR):
+            code = session.run()
+        assert code == 3, "it must stop rather than wait for a picture that never comes"
+        assert session.video_frames == 0
+        assert session.sessions >= 2, "it should try again once before giving up"
+        assert "no picture" in caplog.text
+        assert "power cycle" in caplog.text.lower()
+        assert "batteries" in caplog.text
+
+    def test_a_working_camera_is_unaffected(self, camera):
+        _, port = camera
+        collector = Collector()
+        session = make_session(port, collector, first_frame_timeout=1.5)
+        thread = threading.Thread(target=session.run, daemon=True)
+        thread.start()
+        try:
+            assert wait_for(lambda: len(collector.frames) >= 30), "normal streaming must not trip the new timer"
+            time.sleep(2.0)
+            assert session.sessions == 1, "a camera that is sending must never be restarted"
+        finally:
+            session.stop()
+            thread.join(timeout=5)

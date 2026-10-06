@@ -171,6 +171,16 @@ public final class CameraSession implements Runnable {
      * the moment certain settings are changed.
      */
     public int videoTimeoutMs = 5000;
+
+    /**
+     * How long to wait for the very first picture of a session.
+     *
+     * <p>A jammed camera still completes the handshake and still answers the
+     * heartbeat; it simply never encodes anything. The video timer above cannot
+     * catch that, because it is only armed once a first frame has arrived, so
+     * without this the session would wait for ever.
+     */
+    public int firstFrameTimeoutMs = 10000;
     public int reconnectDelayMs = 1000;
     public boolean reconnect = true;
     public boolean sendStop = true;
@@ -188,6 +198,12 @@ public final class CameraSession implements Runnable {
     public volatile String lastSetRet = null;
     /** Monotonic milliseconds of the last complete frame, or -1 if none this session. */
     public volatile long lastFrameAtMs = -1;
+
+    /** When this session asked the camera to start, used to time the first frame. */
+    private volatile long streamRequestedAtMs;
+
+    /** Consecutive sessions that were acknowledged but produced no picture at all. */
+    private int muteSessions;
     public volatile int streamPackets = 0;
     public volatile int audioChunks = 0;
     public volatile long audioBytes = 0;
@@ -351,6 +367,7 @@ public final class CameraSession implements Runnable {
         setAcked = false;
         getAcked = false;
         lastFrameAtMs = -1;
+        streamRequestedAtMs = Transport.nowMs();
         announcedStreaming = false;
         // A new framer per session: the camera's byte stream restarts, and a half-built
         // access unit from the old one would corrupt the first frame of the new.
@@ -428,8 +445,26 @@ public final class CameraSession implements Runnable {
             // silence alone is not enough to notice a dead picture. Watch for the
             // absence of *video* specifically, and restart when it stops.
             long sinceFrame = lastFrameAtMs;
-            if (sinceFrame >= 0 && now - sinceFrame > videoTimeoutMs) {
-                safeState("picture stopped, restarting");
+            if (sinceFrame >= 0) {
+                if (now - sinceFrame > videoTimeoutMs) {
+                    safeState("picture stopped, restarting");
+                    return Outcome.RESTART;
+                }
+            } else if (now - streamRequestedAtMs > firstFrameTimeoutMs) {
+                // Accepted the start command, then sent nothing. Trying again once
+                // is worthwhile; twice is not.
+                muteSessions++;
+                if (muteSessions >= 2) {
+                    safeError("The camera accepted the start command but has sent no picture."
+                            + System.lineSeparator() + System.lineSeparator()
+                            + "It is most likely jammed. These cameras stop encoding if asked for a "
+                            + "picture size or frame rate they cannot produce, and only a power cycle "
+                            + "clears it."
+                            + System.lineSeparator() + System.lineSeparator()
+                            + "Take the batteries out, put them back, and try again.");
+                    return Outcome.GIVE_UP;
+                }
+                safeState("no picture yet, trying again");
                 return Outcome.RESTART;
             }
         }
@@ -625,6 +660,7 @@ public final class CameraSession implements Runnable {
 
         videoFrames++;
         lastFrameAtMs = Transport.nowMs();
+        muteSessions = 0;
         if (out.keyframe) {
             keyFrames++;
         }
