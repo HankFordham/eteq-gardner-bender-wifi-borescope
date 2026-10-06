@@ -199,6 +199,16 @@ public final class CameraSession implements Runnable {
     /** Monotonic milliseconds of the last complete frame, or -1 if none this session. */
     public volatile long lastFrameAtMs = -1;
 
+    /** Build frames from the camera's declared sizes rather than by scanning. */
+    private boolean directAssembly = true;
+
+    private byte[] assembly;
+    private int assemblyLength;
+    private int assemblyExpected;
+    private long assemblyTimestamp;
+    private boolean assemblyKeyframe;
+    private int assemblyFaults;
+
     /** When this session asked the camera to start, used to time the first frame. */
     private volatile long streamRequestedAtMs;
 
@@ -367,6 +377,8 @@ public final class CameraSession implements Runnable {
         setAcked = false;
         getAcked = false;
         lastFrameAtMs = -1;
+        assembly = null;
+        assemblyLength = 0;
         streamRequestedAtMs = Transport.nowMs();
         announcedStreaming = false;
         // A new framer per session: the camera's byte stream restarts, and a half-built
@@ -638,9 +650,82 @@ public final class CameraSession implements Runnable {
 
         videoBytes += chunk.data.length;
         long ts = chunk.info != null ? (chunk.info.timestampMs & 0xFFFFFFFFL) : -1;
+
+        if (directAssembly && chunk.info != null) {
+            assemble(chunk, ts);
+            return;
+        }
         for (H264Framer.Frame frame : framer.push(chunk.data, ts)) {
             emit(frame);
         }
+    }
+
+    /**
+     * Build each picture from the camera's own description of it.
+     *
+     * <p>Scanning the byte stream for start codes cannot tell that a picture has
+     * ended until the next one begins, which costs a whole frame of delay on a
+     * live view. The camera avoids the guesswork: the first chunk of every frame
+     * carries the total size, so the frame can be handed on the instant its last
+     * byte arrives.
+     *
+     * <p>If a camera turns out not to fill that field in, this quietly gives up and
+     * the scanning framer takes over for the rest of the session.
+     */
+    private void assemble(Protocol.StreamChunk chunk, long ts) {
+        Protocol.StreamInfo info = chunk.info;
+        if (info.startsFrame()) {
+            int declared = info.frameBytes;
+            if (declared <= 0) {
+                // No size to work with; fall back for good.
+                directAssembly = false;
+                for (H264Framer.Frame frame : framer.push(chunk.data, ts)) {
+                    emit(frame);
+                }
+                return;
+            }
+            assembly = new byte[Math.max(declared, chunk.data.length)];
+            assemblyLength = 0;
+            assemblyExpected = declared;
+            assemblyTimestamp = ts;
+            assemblyKeyframe = info.isKeyframe();
+        } else if (assembly == null) {
+            // Joined part way through a picture; wait for the next one to start.
+            return;
+        }
+
+        if (assemblyLength + chunk.data.length > assembly.length) {
+            // More than the camera said it would send. Keep what fits rather than
+            // losing the picture entirely.
+            byte[] bigger = new byte[assemblyLength + chunk.data.length];
+            System.arraycopy(assembly, 0, bigger, 0, assemblyLength);
+            assembly = bigger;
+        }
+        System.arraycopy(chunk.data, 0, assembly, assemblyLength, chunk.data.length);
+        assemblyLength += chunk.data.length;
+
+        if (assemblyLength >= assemblyExpected) {
+            byte[] complete = new byte[assemblyLength];
+            System.arraycopy(assembly, 0, complete, 0, assemblyLength);
+            assembly = null;
+
+            // Insurance against a camera whose declared sizes are not exact: a
+            // picture that does not begin with a start code means the boundaries
+            // are wrong, so stop trusting them and go back to scanning.
+            if (!startsWithStartCode(complete)) {
+                if (++assemblyFaults >= 3) {
+                    directAssembly = false;
+                }
+                return;
+            }
+            assemblyFaults = 0;
+            emit(new H264Framer.Frame(complete, assemblyTimestamp, assemblyKeyframe));
+        }
+    }
+
+    private static boolean startsWithStartCode(byte[] data) {
+        return data.length > 4 && data[0] == 0 && data[1] == 0
+                && (data[2] == 1 || (data[2] == 0 && data[3] == 1));
     }
 
     /**

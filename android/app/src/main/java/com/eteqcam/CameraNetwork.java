@@ -7,6 +7,8 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.RouteInfo;
+import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -52,13 +54,51 @@ public final class CameraNetwork {
     }
 
     private final ConnectivityManager manager;
+    private final WifiManager wifiManager;
     private final Handler main = new Handler(Looper.getMainLooper());
+    private WifiManager.WifiLock wifiLock;
     private ConnectivityManager.NetworkCallback callback;
     private volatile Network network;
 
     public CameraNetwork(Context context) {
-        this.manager = (ConnectivityManager) context.getApplicationContext()
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        Context app = context.getApplicationContext();
+        this.manager = (ConnectivityManager) app.getSystemService(Context.CONNECTIVITY_SERVICE);
+        this.wifiManager = (WifiManager) app.getSystemService(Context.WIFI_SERVICE);
+    }
+
+    /**
+     * Ask the radio to stop saving power while we are watching.
+     *
+     * <p>WiFi normally batches and sleeps between beacons, which is sensible for
+     * email and ruinous for a live picture: it shows up as the stream arriving in
+     * bursts. Low-latency mode turns that off for as long as the lock is held. It
+     * costs battery, which is the right trade while staring at a video.
+     */
+    private void holdRadio() {
+        if (wifiManager == null || wifiLock != null) {
+            return;
+        }
+        int mode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                ? WifiManager.WIFI_MODE_FULL_LOW_LATENCY
+                : WifiManager.WIFI_MODE_FULL_HIGH_PERF;
+        try {
+            wifiLock = wifiManager.createWifiLock(mode, "eteq:stream");
+            wifiLock.setReferenceCounted(false);
+            wifiLock.acquire();
+        } catch (Exception ignored) {
+            wifiLock = null;
+        }
+    }
+
+    private void freeRadio() {
+        if (wifiLock != null) {
+            try {
+                wifiLock.release();
+            } catch (Exception ignored) {
+                // nothing useful to do
+            }
+            wifiLock = null;
+        }
     }
 
     /** Request the WiFi network. The callback fires once it is usable. */
@@ -76,6 +116,7 @@ public final class CameraNetwork {
             @Override
             public void onAvailable(Network available) {
                 network = available;
+                holdRadio();
                 final String gateway = gatewayOf(available);
                 main.post(() -> cb.onAvailable(gateway));
             }
@@ -102,6 +143,7 @@ public final class CameraNetwork {
     }
 
     public void release() {
+        freeRadio();
         if (callback != null) {
             try {
                 manager.unregisterNetworkCallback(callback);

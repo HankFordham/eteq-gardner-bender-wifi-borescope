@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Several causes of delay and judder in the Android app: frames are now completed
+  from the size the camera declares rather than by waiting for the next frame to
+  start, the decoder runs on callbacks instead of blocking, the picture goes to a
+  SurfaceView, the WiFi radio is held out of power saving, and motion is paced to
+  the camera's cadence with a button to turn that off.
 - The probe no longer reports dozens of false negatives after a camera jams. It
   stops at that point, says so, and tests the picture settings before the sweeps
   that are known to jam the reference camera.
