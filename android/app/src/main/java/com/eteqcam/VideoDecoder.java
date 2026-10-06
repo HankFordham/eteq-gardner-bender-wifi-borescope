@@ -1,38 +1,40 @@
 package com.eteqcam;
 
 import android.media.MediaCodec;
-import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.view.Surface;
 
 import com.eteqcam.net.H264Framer;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
 /**
- * Hardware H.264 decoding straight onto the screen.
+ * Hardware H.264 decoding straight onto the screen, in asynchronous mode.
  *
- * <p>This is the reason a native app is worth building. The phone's own decoder
- * takes the camera's frames and writes them into the view's surface with no copy
- * through Java, no container, and no transcoding, which is as direct as the path
- * gets.
+ * <p>The obvious way to drive MediaCodec is to ask for an input buffer, fill it,
+ * then look for output. That is also a good way to build a stutter: asking for an
+ * input buffer blocks, and while it blocks nothing is collecting the decoder's
+ * output, so the decoder runs out of free buffers and has nothing to hand back,
+ * and each frame costs the full timeout. The picture then lags further and further
+ * behind.
  *
- * <p>Two details matter for latency. Frames are rendered as soon as they come out
- * rather than being scheduled against a clock, because the newest picture is the
- * only one worth showing on a live view. And the queue between the network thread
- * and the decoder is deliberately tiny: if decoding ever falls behind, the right
- * answer is to drop old frames, not to build a backlog that shows the viewer the
- * past.
+ * <p>So this uses callbacks instead. Output is released the instant it exists, and
+ * input is filled the instant the decoder offers a buffer. Nothing blocks.
+ *
+ * <p>The queue between the network and the decoder is deliberately tiny. On a live
+ * view the newest picture is the only one worth having, so when it fills the
+ * oldest frame is thrown away rather than adding delay.
  */
 public final class VideoDecoder {
 
-    /** Status reported back to the UI. */
     public interface Listener {
         void onFirstFrame(int width, int height);
 
@@ -40,19 +42,27 @@ public final class VideoDecoder {
     }
 
     private static final String MIME = "video/avc";
-    private static final int QUEUE_DEPTH = 8;
+
+    /** Three frames, about a tenth of a second. Beyond that, delay is worse than loss. */
+    private static final int MAX_WAITING = 3;
 
     private final Listener listener;
-    private final BlockingQueue<H264Framer.Frame> pending = new ArrayBlockingQueue<>(QUEUE_DEPTH);
+    private final Object lock = new Object();
 
-    private volatile Surface surface;
-    private volatile boolean running;
-    private Thread worker;
+    private final ArrayDeque<Integer> freeInputs = new ArrayDeque<>();
+    private final ArrayDeque<H264Framer.Frame> waiting = new ArrayDeque<>();
+    private final Map<Long, Long> submittedAtNanos = new HashMap<>();
+
     private MediaCodec codec;
-
-    private int droppedFrames;
-    private int decodedFrames;
+    private HandlerThread callbackThread;
+    private Surface surface;
+    private boolean running;
     private boolean announced;
+    private long firstTimestampMs = -1;
+
+    private volatile int decodedFrames;
+    private volatile int droppedFrames;
+    private volatile long lastLatencyMs;
 
     public VideoDecoder(Listener listener) {
         this.listener = listener;
@@ -60,27 +70,45 @@ public final class VideoDecoder {
 
     public void start(Surface target) {
         stop();
-        this.surface = target;
-        this.running = true;
-        this.announced = false;
-        this.decodedFrames = 0;
-        this.droppedFrames = 0;
-        worker = new Thread(this::run, "video-decoder");
-        worker.start();
+        synchronized (lock) {
+            surface = target;
+            running = true;
+            announced = false;
+            decodedFrames = 0;
+            droppedFrames = 0;
+            lastLatencyMs = 0;
+            firstTimestampMs = -1;
+        }
     }
 
     public void stop() {
-        running = false;
-        if (worker != null) {
-            worker.interrupt();
-            try {
-                worker.join(1500);
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
-            }
-            worker = null;
+        MediaCodec doomed;
+        HandlerThread thread;
+        synchronized (lock) {
+            running = false;
+            doomed = codec;
+            codec = null;
+            thread = callbackThread;
+            callbackThread = null;
+            freeInputs.clear();
+            waiting.clear();
+            submittedAtNanos.clear();
         }
-        pending.clear();
+        if (doomed != null) {
+            try {
+                doomed.stop();
+            } catch (Exception ignored) {
+                // already gone
+            }
+            try {
+                doomed.release();
+            } catch (Exception ignored) {
+                // nothing useful to do
+            }
+        }
+        if (thread != null) {
+            thread.quitSafely();
+        }
     }
 
     public int decodedFrames() {
@@ -91,145 +119,150 @@ public final class VideoDecoder {
         return droppedFrames;
     }
 
+    /** Milliseconds between a frame arriving from the camera and being drawn. */
+    public long lastLatencyMs() {
+        return lastLatencyMs;
+    }
+
     /** Hand over one access unit. Never blocks the caller. */
     public void submit(H264Framer.Frame frame) {
-        if (!running) {
-            return;
-        }
-        if (!pending.offer(frame)) {
-            // Full: throw away the oldest so the viewer sees the newest.
-            pending.poll();
-            droppedFrames++;
-            pending.offer(frame);
+        synchronized (lock) {
+            if (!running) {
+                return;
+            }
+            if (codec == null) {
+                // Nothing decodes before the parameter sets arrive, and starting
+                // mid-picture shows a screen of rubbish.
+                if (!frame.keyframe) {
+                    return;
+                }
+                byte[] parameterSets = parameterSets(frame.data);
+                if (parameterSets == null) {
+                    return;
+                }
+                try {
+                    configure(parameterSets);
+                } catch (Exception e) {
+                    listener.onError("could not start the decoder: " + e);
+                    return;
+                }
+                firstTimestampMs = frame.timestampMs;
+            }
+
+            Integer index = freeInputs.poll();
+            if (index != null) {
+                fill(index, frame);
+                return;
+            }
+            if (waiting.size() >= MAX_WAITING) {
+                waiting.poll();
+                droppedFrames++;
+            }
+            waiting.add(frame);
         }
     }
 
-    // -- the decoding thread -------------------------------------------------
-
-    private void run() {
-        long firstTimestampMs = -1;
-        try {
-            while (running) {
-                H264Framer.Frame frame = pending.poll(200, TimeUnit.MILLISECONDS);
-                if (frame == null) {
-                    continue;
-                }
-                if (codec == null) {
-                    // Nothing can be decoded before the parameter sets arrive, and
-                    // starting on a mid-stream frame shows a screen of garbage.
-                    if (!frame.keyframe) {
-                        continue;
-                    }
-                    byte[] config = parameterSets(frame.data);
-                    if (config == null) {
-                        continue;
-                    }
-                    configure(config);
-                    firstTimestampMs = frame.timestampMs;
-                }
-                long presentationUs = Math.max(0, (frame.timestampMs - firstTimestampMs)) * 1000L;
-                feed(frame.data, presentationUs);
-                drain();
-            }
-        } catch (InterruptedException ignored) {
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            if (running) {
-                listener.onError("the decoder stopped: " + e);
-            }
-        } finally {
-            releaseCodec();
-        }
-    }
+    // -- internals, all called with the lock held or from the callback thread --
 
     private void configure(byte[] parameterSets) throws Exception {
-        // The real dimensions come from the parameter sets themselves; the values
-        // passed here are only a hint, and the decoder corrects them.
+        // The real dimensions come from the parameter sets; these are only a hint.
         MediaFormat format = MediaFormat.createVideoFormat(MIME, 640, 240);
         format.setByteBuffer("csd-0", ByteBuffer.wrap(parameterSets));
-        format.setInteger(MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Tells the decoder not to hold frames back for reordering. There are
-            // no B-frames in this stream, so there is nothing to reorder anyway.
+            // Do not hold frames back for reordering. There are no B-frames here.
             format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1);
         }
+
+        callbackThread = new HandlerThread("decoder-callbacks");
+        callbackThread.start();
+
         codec = MediaCodec.createDecoderByType(MIME);
+        codec.setCallback(new MediaCodec.Callback() {
+            @Override
+            public void onInputBufferAvailable(MediaCodec mc, int index) {
+                synchronized (lock) {
+                    if (!running) {
+                        return;
+                    }
+                    H264Framer.Frame next = waiting.poll();
+                    if (next != null) {
+                        fill(index, next);
+                    } else {
+                        freeInputs.add(index);
+                    }
+                }
+            }
+
+            @Override
+            public void onOutputBufferAvailable(MediaCodec mc, int index, MediaCodec.BufferInfo info) {
+                try {
+                    // true means draw it now. Nothing is scheduled against a clock:
+                    // on a live view the newest frame should appear immediately.
+                    mc.releaseOutputBuffer(index, true);
+                } catch (Exception ignored) {
+                    return;
+                }
+                decodedFrames++;
+                synchronized (lock) {
+                    Long sentAt = submittedAtNanos.remove(info.presentationTimeUs);
+                    if (sentAt != null) {
+                        lastLatencyMs = (System.nanoTime() - sentAt) / 1_000_000L;
+                    }
+                    if (submittedAtNanos.size() > 64) {
+                        submittedAtNanos.clear();
+                    }
+                }
+            }
+
+            @Override
+            public void onOutputFormatChanged(MediaCodec mc, MediaFormat format) {
+                if (announced) {
+                    return;
+                }
+                announced = true;
+                listener.onFirstFrame(
+                        format.getInteger(MediaFormat.KEY_WIDTH),
+                        format.getInteger(MediaFormat.KEY_HEIGHT));
+            }
+
+            @Override
+            public void onError(MediaCodec mc, MediaCodec.CodecException e) {
+                listener.onError("the decoder failed: " + e.getDiagnosticInfo());
+            }
+        }, new Handler(callbackThread.getLooper()));
+
         codec.configure(format, surface, null, 0);
         codec.start();
     }
 
-    private void feed(byte[] data, long presentationUs) {
-        int index = codec.dequeueInputBuffer(100_000);
-        if (index < 0) {
-            droppedFrames++;
-            return;
-        }
-        ByteBuffer input = codec.getInputBuffer(index);
-        if (input == null) {
-            return;
-        }
-        input.clear();
-        if (input.capacity() < data.length) {
-            codec.queueInputBuffer(index, 0, 0, presentationUs, 0);
-            droppedFrames++;
-            return;
-        }
-        input.put(data);
-        codec.queueInputBuffer(index, 0, data.length, presentationUs, 0);
-    }
-
-    private void drain() {
-        MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
-        while (running) {
-            int index = codec.dequeueOutputBuffer(info, 0);
-            if (index == MediaCodec.INFO_TRY_AGAIN_LATER) {
-                return;
-            }
-            if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                MediaFormat output = codec.getOutputFormat();
-                if (!announced) {
-                    announced = true;
-                    listener.onFirstFrame(
-                            output.getInteger(MediaFormat.KEY_WIDTH),
-                            output.getInteger(MediaFormat.KEY_HEIGHT));
-                }
-                continue;
-            }
-            if (index < 0) {
-                return;
-            }
-            // true means "show it now".
-            codec.releaseOutputBuffer(index, true);
-            decodedFrames++;
-        }
-    }
-
-    private void releaseCodec() {
-        if (codec == null) {
+    private void fill(int index, H264Framer.Frame frame) {
+        MediaCodec target = codec;
+        if (target == null) {
             return;
         }
         try {
-            codec.stop();
-        } catch (Exception ignored) {
-            // already dead
+            ByteBuffer input = target.getInputBuffer(index);
+            if (input == null) {
+                return;
+            }
+            input.clear();
+            if (input.capacity() < frame.data.length) {
+                target.queueInputBuffer(index, 0, 0, 0, 0);
+                droppedFrames++;
+                return;
+            }
+            input.put(frame.data);
+            long presentationUs = Math.max(0, frame.timestampMs - firstTimestampMs) * 1000L;
+            submittedAtNanos.put(presentationUs, System.nanoTime());
+            target.queueInputBuffer(index, 0, frame.data.length, presentationUs, 0);
+        } catch (Exception e) {
+            droppedFrames++;
         }
-        try {
-            codec.release();
-        } catch (Exception ignored) {
-            // nothing useful to do
-        }
-        codec = null;
     }
 
     // -- parameter sets ------------------------------------------------------
 
-    /**
-     * Pull the SPS and PPS out of an access unit, as one Annex B blob.
-     *
-     * <p>Returns null when the unit does not carry both, which happens on every
-     * frame that is not a keyframe.
-     */
+    /** The SPS and PPS of an access unit joined together, or null if it has neither. */
     static byte[] parameterSets(byte[] annexB) {
         byte[][] both = spsPps(annexB);
         if (both == null) {
