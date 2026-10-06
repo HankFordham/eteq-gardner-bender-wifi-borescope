@@ -95,6 +95,7 @@
   <span class="chip">frames <b id="frames">-</b></span>
   <span class="chip">repeats <b id="drops">-</b></span>
   <span class="chip">mode <b id="mode">-</b></span>
+  <span class="chip">delay <b id="delay">-</b></span>
 </header>
 
 <main>
@@ -219,6 +220,8 @@
   function keepLive() {
     const end = liveEdge();
     if (end === null) return;
+    // How far behind the newest decoded frame we are actually playing.
+    $("delay").textContent = Math.round((end - video.currentTime) * 1000) + " ms";
     const b = buffered();
     const drift = end - video.currentTime;
     if (drift > 1.2 || video.currentTime < b.start(0)) {
@@ -266,7 +269,11 @@
 
     try {
       sourceBuffer = ms.addSourceBuffer(mime);
-      sourceBuffer.mode = "sequence";
+      // "segments", not "sequence": every fragment carries an absolute decode
+      // time, so the browser can lay the media on the camera's own clock. In
+      // sequence mode it instead stacks fragments end to end using their declared
+      // durations, and any error in those accumulates into ever-growing delay.
+      sourceBuffer.mode = "segments";
       sourceBuffer.addEventListener("updateend", () => { flush(); evict(false); });
     } catch (err) {
       console.warn("addSourceBuffer failed", err);
