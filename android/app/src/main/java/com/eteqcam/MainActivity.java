@@ -4,15 +4,16 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.graphics.Bitmap;
-import android.graphics.SurfaceTexture;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
+import android.view.PixelCopy;
 import android.view.Surface;
-import android.view.TextureView;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -42,7 +43,7 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
 
     private final Handler main = new Handler(Looper.getMainLooper());
 
-    private TextureView video;
+    private SurfaceView video;
     private FrameLayout videoHolder;
     private TextView status;
     private TextView message;
@@ -102,27 +103,22 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
             applyVideoSize();
         });
 
-        video.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+        video.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
-                surface = new Surface(texture);
+            public void surfaceCreated(SurfaceHolder holder) {
+                surface = holder.getSurface();
                 applyVideoSize();
             }
 
             @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
-                // handled by applyVideoSize
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                surface = holder.getSurface();
             }
 
             @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
+            public void surfaceDestroyed(SurfaceHolder holder) {
                 surface = null;
-                return true;
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture texture) {
-                // nothing to do per frame
+                decoder.stop();
             }
         });
 
@@ -290,11 +286,23 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
     }
 
     private void takeSnapshot() {
-        Bitmap frame = video.getBitmap();
-        if (frame == null) {
+        if (videoWidth <= 0 || surface == null || !surface.isValid()) {
             toast("No picture to save yet");
             return;
         }
+        // A SurfaceView's pixels are not in the view hierarchy, so they have to be
+        // copied out of the compositor rather than read from a canvas.
+        Bitmap frame = Bitmap.createBitmap(video.getWidth(), video.getHeight(), Bitmap.Config.ARGB_8888);
+        PixelCopy.request(video, frame, result -> {
+            if (result == PixelCopy.SUCCESS) {
+                saveSnapshot(frame);
+            } else {
+                toast("Could not capture the picture (" + result + ")");
+            }
+        }, main);
+    }
+
+    private void saveSnapshot(Bitmap frame) {
         String name = "eteq-" + new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date()) + ".png";
         ContentValues values = new ContentValues();
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
@@ -346,9 +354,10 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
             lastFrameCount = session.videoFrames;
 
             String line = String.format(Locale.US,
-                    "%s  %dx%d  %.1f fps  %d frames%s%s",
+                    "%s  %dx%d  %.1f fps  %d ms  %d frames%s%s",
                     cameraIp == null ? "camera" : cameraIp,
-                    videoWidth, videoHeight, measuredFps, session.videoFrames,
+                    videoWidth, videoHeight, measuredFps,
+                    decoder.lastLatencyMs(), session.videoFrames,
                     decoder.droppedFrames() > 0 ? "  " + decoder.droppedFrames() + " dropped" : "",
                     recorder.isRecording() ? "  REC " + recorder.frameCount() : "");
             status.setText(line);

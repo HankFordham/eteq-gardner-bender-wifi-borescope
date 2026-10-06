@@ -10,7 +10,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <TextureView
+        <!-- SurfaceView, not TextureView: its buffers go straight to the display
+             compositor instead of through the view hierarchy, which is one less
+             copy and one less frame of delay. Snapshots use PixelCopy. -->
+        <SurfaceView
             android:id="@+id/video"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
