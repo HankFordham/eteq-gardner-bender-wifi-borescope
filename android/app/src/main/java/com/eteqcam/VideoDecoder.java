@@ -64,6 +64,15 @@ public final class VideoDecoder {
     private volatile int droppedFrames;
     private volatile long lastLatencyMs;
 
+    /** Smooth playback at the camera's own cadence, rather than as frames land. */
+    private volatile boolean paced = true;
+
+    /** How far ahead of the newest frame the paced clock aims to sit. */
+    private static final long LEAD_NANOS = 45_000_000L;
+
+    private long clockBaseNanos;
+    private long clockBasePtsUs = -1;
+
     public VideoDecoder(Listener listener) {
         this.listener = listener;
     }
@@ -196,9 +205,11 @@ public final class VideoDecoder {
             @Override
             public void onOutputBufferAvailable(MediaCodec mc, int index, MediaCodec.BufferInfo info) {
                 try {
-                    // true means draw it now. Nothing is scheduled against a clock:
-                    // on a live view the newest frame should appear immediately.
-                    mc.releaseOutputBuffer(index, true);
+                    if (paced) {
+                        mc.releaseOutputBuffer(index, renderTimeFor(info.presentationTimeUs));
+                    } else {
+                        mc.releaseOutputBuffer(index, true);
+                    }
                 } catch (Exception ignored) {
                     return;
                 }
@@ -233,6 +244,53 @@ public final class VideoDecoder {
 
         codec.configure(format, surface, null, 0);
         codec.start();
+    }
+
+    /** Whether to display at the camera's cadence or the instant each frame decodes. */
+    public void setPaced(boolean value) {
+        paced = value;
+        synchronized (lock) {
+            clockBasePtsUs = -1;
+        }
+    }
+
+    public boolean isPaced() {
+        return paced;
+    }
+
+    /**
+     * When this frame should appear, on the phone's own clock.
+     *
+     * <p>Frames arrive in bursts: a picture is eight packets that land together,
+     * then a gap. Showing each one the moment it decodes therefore reproduces the
+     * network's jitter as visible unevenness. Scheduling them at the spacing the
+     * camera recorded, a fraction of a second behind the newest, makes the motion
+     * even. The cost is that fraction of a second, which is why it can be turned
+     * off.
+     *
+     * <p>The two clocks drift, so the base is nudged gently towards where it should
+     * be and reset outright if it ever ends up far away.
+     */
+    private long renderTimeFor(long presentationTimeUs) {
+        long now = System.nanoTime();
+        synchronized (lock) {
+            if (clockBasePtsUs < 0) {
+                clockBasePtsUs = presentationTimeUs;
+                clockBaseNanos = now + LEAD_NANOS;
+            }
+            long target = clockBaseNanos + (presentationTimeUs - clockBasePtsUs) * 1000L;
+            long ahead = target - now;
+            if (ahead < 0 || ahead > LEAD_NANOS * 6) {
+                // Lost the thread of it: start the clock again from here.
+                clockBasePtsUs = presentationTimeUs;
+                clockBaseNanos = now + LEAD_NANOS;
+                return clockBaseNanos;
+            }
+            // Ease towards the intended lead instead of correcting in one jump,
+            // which would itself be visible.
+            clockBaseNanos += (LEAD_NANOS - ahead) / 16;
+            return target;
+        }
     }
 
     private void fill(int index, H264Framer.Frame frame) {

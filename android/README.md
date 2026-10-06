@@ -80,6 +80,37 @@ Python in `src/eteq/` and sharing its behaviour exactly, including the awkward
 parts the real hardware forced on us. Those are explained in
 [docs/PROTOCOL.md](../docs/PROTOCOL.md).
 
+## Smoothness and delay
+
+Five things were done to keep the picture close to live and the motion even.
+
+**Frames are built from the camera's own description, not by scanning.** Looking
+for start codes cannot tell that a picture has ended until the next one begins,
+which costs a whole frame. The first packet of every frame carries its total size,
+so the frame can be handed on the instant its last byte lands.
+
+**The decoder runs on callbacks.** Driving MediaCodec by asking for a buffer and
+waiting blocks the same thread that should be collecting output, so the decoder
+starves itself and each frame costs the full timeout.
+
+**The picture goes to a SurfaceView**, whose buffers reach the display compositor
+without passing through the view hierarchy.
+
+**The WiFi radio is held out of power saving** while a picture is on screen. WiFi
+normally batches and sleeps between beacons, which is sensible for email and shows
+up here as the stream arriving in bursts. This costs battery, which is the right
+trade while watching video.
+
+**Motion is paced to the camera's own cadence.** Frames arrive in bursts, so
+drawing each one the moment it decodes reproduces the network's jitter as visible
+unevenness. They are instead scheduled at the spacing the camera recorded, a
+fraction of a second behind. The Smooth button turns this off, which removes that
+fraction of a second and puts the jitter back; try both and keep whichever looks
+better on your camera.
+
+The status line reports the measured milliseconds between a frame arriving and
+being drawn.
+
 ## Known limits
 
 The reference camera only ever produces 640x240, refuses most settings changes

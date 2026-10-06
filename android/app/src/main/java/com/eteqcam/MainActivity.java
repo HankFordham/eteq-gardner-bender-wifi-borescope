@@ -51,6 +51,7 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
     private Button snapshot;
     private Button record;
     private Button aspect;
+    private Button pacing;
 
     private CameraNetwork network;
     private VideoDecoder decoder;
@@ -83,6 +84,7 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
         snapshot = findViewById(R.id.snapshot);
         record = findViewById(R.id.record);
         aspect = findViewById(R.id.aspect);
+        pacing = findViewById(R.id.pacing);
 
         network = new CameraNetwork(this);
         decoder = new VideoDecoder(this);
@@ -101,6 +103,14 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
             wantFourThree = !wantFourThree;
             aspect.setText(wantFourThree ? "4:3" : "native");
             applyVideoSize();
+        });
+
+        pacing.setOnClickListener(v -> {
+            decoder.setPaced(!decoder.isPaced());
+            pacing.setText(decoder.isPaced() ? "Smooth" : "Fastest");
+            toast(decoder.isPaced()
+                    ? "Even motion, a fraction of a second behind"
+                    : "Every frame the moment it arrives");
         });
 
         video.getHolder().addCallback(new SurfaceHolder.Callback() {
@@ -178,7 +188,12 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
                 return network.createSocket(0);
             }
         });
-        sessionThread = new Thread(session, "camera-session");
+        sessionThread = new Thread(() -> {
+            // Video packets arrive 150 times a second and must not wait behind
+            // background work, or the unevenness shows on screen.
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_DISPLAY);
+            session.run();
+        }, "camera-session");
         sessionThread.start();
 
         connect.setEnabled(true);
@@ -209,7 +224,7 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
         connect.setText("Connect");
         snapshot.setEnabled(false);
         record.setEnabled(false);
-        record.setText("Record");
+        record.setText("Rec");
         if (note != null) {
             status.setText(note);
             message.setVisibility(View.VISIBLE);
@@ -328,7 +343,7 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
     private void toggleRecording() {
         if (recorder.isRecording()) {
             String name = recorder.stop();
-            record.setText("Record");
+            record.setText("Rec");
             toast(name != null ? "Saved " + name : "Nothing was recorded");
             return;
         }
