@@ -132,6 +132,13 @@ class SessionOptions:
     stats_interval: float = 5.0
     dump_packets: int = 8
     dump_info: int = 6
+    first_frame_timeout: float = 10.0
+    """Give up on a session that is acknowledged but never produces a picture.
+
+    A jammed camera still completes the handshake and still answers the
+    heartbeat; it simply never encodes anything. Without this the session would
+    wait for ever, looking identical to a camera that is merely slow.
+    """
     video_timeout: float = 5.0
     """Restart if the video stops for this long, even while the camera still talks.
 
@@ -167,6 +174,7 @@ class CameraSession:
         self.beacon = None
         self.address_guessed = False
         self._silent_sessions = 0
+        self._mute_sessions = 0
 
         self.framer = H264Framer()
         self._ts_offset = 0
@@ -347,6 +355,7 @@ class CameraSession:
 
         self.video_frames += 1
         self.last_frame_at = time.monotonic()
+        self._mute_sessions = 0
         if frame.is_keyframe:
             self.keyframes += 1
 
@@ -445,6 +454,7 @@ class CameraSession:
         if not self.set_acked:
             log.warning("the camera did not acknowledge the start command; listening anyway")
 
+        stream_requested_at = time.monotonic()
         if t.rx_packets == 0:
             self._silent_sessions += 1
             self._explain_silence()
@@ -483,12 +493,29 @@ class CameraSession:
                 return "reconnect"
 
             # The camera keeps answering the heartbeat after its encoder stops,
-            # so silence alone is not enough to notice a dead picture.
-            if self.last_frame_at and now - self.last_frame_at > opts.video_timeout:
+            # so silence alone is not enough to notice a dead picture. Before the
+            # first frame the clock runs from when we asked for the stream,
+            # otherwise a camera that never starts would never be noticed.
+            if self.last_frame_at:
+                if now - self.last_frame_at > opts.video_timeout:
+                    log.error(
+                        "the picture stopped %.0fs ago although the camera is still answering; restarting",
+                        now - self.last_frame_at,
+                    )
+                    return "restart"
+            elif now - stream_requested_at > opts.first_frame_timeout:
+                self._mute_sessions += 1
                 log.error(
-                    "the picture stopped %.0fs ago although the camera is still answering; restarting",
-                    now - self.last_frame_at,
+                    "the camera accepted the start command but has sent no picture in %.0fs.",
+                    opts.first_frame_timeout,
                 )
+                if self._mute_sessions >= 2:
+                    log.error(
+                        "It is most likely jammed. These cameras stop encoding if asked for a "
+                        "picture size or frame rate they cannot produce, and only a power cycle "
+                        "clears it. Take the batteries out, put them back, and try again."
+                    )
+                    return 3
                 return "restart"
         return 0
 
