@@ -183,6 +183,28 @@ def local_ip_for(peer_ip: str) -> str | None:
         sock.close()
 
 
+def local_ipv4_addresses() -> list[str]:
+    """Every IPv4 address this machine answers on, best effort.
+
+    Used to tell the user which URL to type into a phone. The camera's own
+    network is in here too, which is why the caller labels it.
+    """
+    found: list[str] = []
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            addr = info[4][0]
+            if addr not in found and not addr.startswith("127."):
+                found.append(addr)
+    except OSError:
+        pass
+    # The hostname lookup misses some adapters, so add the default route's own
+    # address as well.
+    primary = local_ip_for("8.8.8.8")
+    if primary and primary not in found and not primary.startswith("127."):
+        found.append(primary)
+    return found
+
+
 def resolve_camera(
     explicit_ip: str | None = None,
     discover: bool = True,

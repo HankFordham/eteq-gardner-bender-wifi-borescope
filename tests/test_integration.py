@@ -329,3 +329,62 @@ class TestSettingsAndStalls:
         finally:
             session.stop()
             thread.join(timeout=5)
+
+
+class TestSharingToOtherDevices:
+    """Serving the picture to a phone means serving it to a whole network."""
+
+    @pytest.fixture
+    def shared(self, camera):
+        _, port = camera
+        hub = StreamHub(default_fps=30.0)
+        session = make_session(port, hub)
+        thread = threading.Thread(target=session.run, daemon=True)
+        thread.start()
+        server = CameraHTTPServer(
+            0, hub, status_fn=session.status, set_fn=session.request_set,
+            host="0.0.0.0", token="abc123",  # noqa: S104 - that is the feature
+        )
+        assert wait_for(lambda: session.video_frames >= 10)
+        yield session, server
+        session.stop()
+        thread.join(timeout=5)
+        server.close()
+
+    def test_loopback_never_needs_a_key(self, shared):
+        _, server = shared
+        body = urllib.request.urlopen(f"http://127.0.0.1:{server.port}/", timeout=10).read()
+        assert b"<title>eteq camera</title>" in body
+
+    def test_urls_carry_the_key(self, shared):
+        _, server = shared
+        urls = server.urls(["192.168.1.20"])
+        assert urls == [f"http://192.168.1.20:{server.port}/?k=abc123"]
+
+    def test_a_key_is_required_off_machine(self, shared):
+        """The authorisation rule itself, independent of where the socket came from."""
+        _, server = shared
+        handler_cls = server.httpd.RequestHandlerClass
+        checker = handler_cls._authorised
+
+        class Fake:
+            def __init__(self, addr, path, headers):
+                self.client_address = addr
+                self.path = path
+                self.headers = headers
+
+            def _is_loopback(self):
+                return handler_cls._is_loopback(self)
+
+        remote = ("192.168.1.50", 5000)
+        assert checker(Fake(("127.0.0.1", 5000), "/", {})) is True, "this machine is always allowed"
+        assert checker(Fake(remote, "/", {})) is False, "a stranger with no key must be refused"
+        assert checker(Fake(remote, "/?k=wrong", {})) is False
+        assert checker(Fake(remote, "/?k=abc123", {})) is True
+        assert checker(Fake(remote, "/", {"X-Eteq-Key": "abc123"})) is True
+
+    def test_page_passes_the_key_on(self, shared):
+        _, server = shared
+        page = urllib.request.urlopen(f"http://127.0.0.1:{server.port}/", timeout=10).read()
+        assert b"X-Eteq-Key" in page, "the page must send the key it was opened with"
+        assert b'get("k")' in page

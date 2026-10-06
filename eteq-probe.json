@@ -1,11 +1,11 @@
 {
   "baseline": {
     "fps": 30.0,
-    "kbps": 965.3,
+    "kbps": 963.7,
     "width": 640,
     "height": 240,
     "frames": 90,
-    "avg_frame_bytes": 4022
+    "avg_frame_bytes": 4016
   },
   "codec": "avc1.42001E",
   "restored": {
@@ -22,7 +22,8 @@
     {
       "parameter": "FrameSize",
       "value": 20971760,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "1",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
@@ -37,14 +38,15 @@
     {
       "parameter": "FrameSize",
       "value": 41943280,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
-        "fps": 28.8,
-        "kbps": 951.9,
+        "fps": 0.0,
+        "kbps": 0.0,
         "width": 640,
         "height": 240,
-        "frames": 72,
-        "avg_frame_bytes": 4132
+        "frames": 0,
+        "avg_frame_bytes": 0
       },
       "verdict": "applied",
       "note": ""
@@ -52,7 +54,8 @@
     {
       "parameter": "FrameSize",
       "value": 41943520,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
@@ -67,27 +70,29 @@
     {
       "parameter": "FrameSize",
       "value": 83886560,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
-        "fps": 29.2,
-        "kbps": 1751.7,
-        "width": 256,
-        "height": 480,
-        "frames": 73,
-        "avg_frame_bytes": 7500
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 640,
+        "height": 240,
+        "frames": 0,
+        "avg_frame_bytes": 0
       },
-      "verdict": "ignored",
-      "note": "still encoding 256x480"
+      "verdict": "stream stopped",
+      "note": "the camera stopped sending; this size is probably unsupported"
     },
     {
       "parameter": "FrameSize",
       "value": 83886800,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -97,12 +102,13 @@
     {
       "parameter": "FrameRate",
       "value": 3,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -112,12 +118,13 @@
     {
       "parameter": "FrameRate",
       "value": 5,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -127,27 +134,29 @@
     {
       "parameter": "FrameRate",
       "value": 10,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
-        "fps": 0.8,
-        "kbps": 32.3,
-        "width": 256,
-        "height": 480,
-        "frames": 2,
-        "avg_frame_bytes": 5048
+        "fps": 0.0,
+        "kbps": 0.0,
+        "width": 640,
+        "height": 240,
+        "frames": 0,
+        "avg_frame_bytes": 0
       },
-      "verdict": "ignored",
-      "note": "asked for 10, measured 0.8"
+      "verdict": "stream stopped",
+      "note": ""
     },
     {
       "parameter": "FrameRate",
       "value": 15,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -157,12 +166,13 @@
     {
       "parameter": "FrameRate",
       "value": 20,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -172,12 +182,13 @@
     {
       "parameter": "FrameRate",
       "value": 25,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -187,12 +198,13 @@
     {
       "parameter": "FrameRate",
       "value": 30,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -202,12 +214,13 @@
     {
       "parameter": "BitRate",
       "value": 128,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -217,12 +230,13 @@
     {
       "parameter": "BitRate",
       "value": 256,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -232,12 +246,13 @@
     {
       "parameter": "BitRate",
       "value": 512,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -247,12 +262,13 @@
     {
       "parameter": "BitRate",
       "value": 768,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -262,12 +278,13 @@
     {
       "parameter": "BitRate",
       "value": 1024,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -277,12 +294,13 @@
     {
       "parameter": "BitRate",
       "value": 1536,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -292,12 +310,13 @@
     {
       "parameter": "BitRate",
       "value": 2048,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -307,12 +326,13 @@
     {
       "parameter": "BitRate",
       "value": 2560,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -322,12 +342,13 @@
     {
       "parameter": "BitRate",
       "value": 3072,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
@@ -337,317 +358,338 @@
     {
       "parameter": "Zoom",
       "value": 0,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Zoom",
       "value": 1,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Zoom",
       "value": 2,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Zoom",
       "value": 3,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "FlipMirror",
       "value": 0,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "FlipMirror",
       "value": 1,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "FlipMirror",
       "value": 2,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "FlipMirror",
       "value": 3,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Infrared",
       "value": 0,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Infrared",
       "value": 1,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Infrared",
       "value": 2,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Brightness",
       "value": 0,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Brightness",
       "value": 128,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Brightness",
       "value": 255,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Contrast",
       "value": 0,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Contrast",
       "value": 4,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "Contrast",
       "value": 7,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "LightCond",
       "value": 0,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "LightCond",
       "value": 1,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "LightFreq",
       "value": 0,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     },
     {
       "parameter": "LightFreq",
       "value": 1,
-      "acknowledged": true,
+      "accepted": true,
+      "ret": "?",
       "measured": {
         "fps": 0.0,
         "kbps": 0.0,
-        "width": 256,
-        "height": 480,
+        "width": 640,
+        "height": 240,
         "frames": 0,
         "avg_frame_bytes": 0
       },
       "verdict": "stream stopped",
-      "note": ""
+      "note": "accepted, but the picture did not come back"
     }
   ]
 }

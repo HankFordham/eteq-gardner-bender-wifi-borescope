@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import secrets
 import subprocess
 import sys
 import threading
@@ -78,6 +79,14 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--http", dest="http", action="store_true", default=None, help="serve the browser player (default)")
     g.add_argument("--no-http", dest="http", action="store_false", help="do not start the web server")
     g.add_argument("--port", type=int, default=8090, metavar="PORT", help="web server port (default 8090)")
+    g.add_argument(
+        "--lan",
+        action="store_true",
+        help="also serve to other devices on your network, so a phone or tablet can watch",
+    )
+    g.add_argument("--bind", metavar="ADDR", help="exact address to serve on (implies --lan unless loopback)")
+    g.add_argument("--key", metavar="TEXT", help="access key for other devices (one is generated otherwise)")
+    g.add_argument("--no-key", action="store_true", help="serve to the network with no access key at all")
     g.add_argument("--no-open", dest="open_browser", action="store_false", help="do not open a browser window")
     g.add_argument("--player", choices=["none", "ffplay"], default="none", help="also open a native window")
     g.add_argument("--scale", type=float, metavar="N", help="stretch the ffplay window vertically, e.g. 2")
@@ -174,9 +183,13 @@ def do_firewall() -> int:
     the two ports involved and to private address ranges.
     """
     rule = "eteq camera UDP in"
+    viewer_rule = "eteq viewer TCP in"
     command = (
         f'New-NetFirewallRule -DisplayName "{rule}" -Direction Inbound -Protocol UDP '
         f"-LocalPort {P.BEACON_PORT},50000 "
+        "-RemoteAddress 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12 -Profile Any -Action Allow; "
+        f'New-NetFirewallRule -DisplayName "{viewer_rule}" -Direction Inbound -Protocol TCP '
+        "-LocalPort 8090 "
         "-RemoteAddress 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12 -Profile Any -Action Allow"
     )
     print("Adding a Windows Firewall rule. You will see a prompt from Windows.\n")
@@ -201,8 +214,10 @@ def do_firewall() -> int:
         print(completed.stderr.strip() or "the elevation prompt was declined")
         print("\nYou can add it by hand from an administrator PowerShell with the command above.")
         return 1
-    print("Rule added. Remove it later with:")
+    print("Rules added: inbound UDP for the camera, and inbound TCP 8090 so a phone")
+    print("can reach the viewer. Remove them later with:")
     print(f'  Remove-NetFirewallRule -DisplayName "{rule}"')
+    print(f'  Remove-NetFirewallRule -DisplayName "{viewer_rule}"')
     return 0
 
 
@@ -264,6 +279,42 @@ def do_dry_run(settings: CameraSettings, options: SessionOptions) -> int:
 
 
 # -- the normal path ----------------------------------------------------------
+
+
+def print_shared_urls(server, session) -> None:
+    """Tell the user exactly what to type into the phone."""
+    from .discovery import local_ip_for, local_ipv4_addresses
+
+    camera_side = local_ip_for(session.camera_ip) if session.camera_ip else None
+    addresses = local_ipv4_addresses()
+    others = [a for a in addresses if a != camera_side]
+
+    # A laptop usually has several addresses, most of them virtual adapters that
+    # no phone can reach. The one the default route uses is the one to try first.
+    primary = local_ip_for("8.8.8.8")
+    if primary in others:
+        others.remove(primary)
+        others.insert(0, primary)
+
+    print()
+    print("  On your phone, on the same network, open:")
+    if others:
+        for index, url in enumerate(server.urls(others)):
+            label = "   <- try this one first" if index == 0 and primary in addresses else ""
+            print(f"      {url}{label}")
+    else:
+        print("      (no second network found. Connect the laptop to your home network")
+        print("       by cable, or plug the phone in and turn on USB tethering.)")
+    if camera_side:
+        print()
+        print(f"  Ignore {camera_side}; that is the camera's own network, which your phone cannot join.")
+    if server.token:
+        print()
+        print(f"  Access key: {server.token}")
+        print("  It is already in the links above. Anyone on that network who has it can watch.")
+    else:
+        print()
+        print("  No access key. Anyone on that network can watch and control the camera.")
 
 
 def run_live(args: argparse.Namespace) -> int:
@@ -344,6 +395,11 @@ def run_live(args: argparse.Namespace) -> int:
 
     server = None
     if want_http:
+        host = args.bind or ("0.0.0.0" if args.lan else "127.0.0.1")  # noqa: S104 - opt in
+        sharing = host not in ("127.0.0.1", "localhost", "::1")
+        token = None
+        if sharing and not args.no_key:
+            token = args.key or secrets.token_hex(3)
         try:
             server = CameraHTTPServer(
                 args.port,
@@ -352,12 +408,18 @@ def run_live(args: argparse.Namespace) -> int:
                 set_fn=session.request_set,
                 record_fn=session.toggle_record,
                 mjpeg_fn=(lambda: transcoder),
+                host=host,
+                token=token,
             )
         except OSError as exc:
             log.error("cannot serve on port %d: %s", args.port, exc)
             return 1
         url = f"http://127.0.0.1:{server.port}/"
-        print(f"\n  Watch the camera at: {url}\n")
+        print()
+        print(f"  Watch the camera at: {url}")
+        if sharing:
+            print_shared_urls(server, session)
+        print()
         if args.open_browser:
             threading.Timer(1.0, lambda: webbrowser.open(url)).start()
 

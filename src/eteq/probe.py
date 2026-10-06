@@ -156,6 +156,14 @@ class Prober:
         self.restart_timeout = restart_timeout
         self.results: list[ProbeResult] = []
         self.baseline: dict[str, Any] = {}
+        self.wedged_at: str | None = None
+        """Set when the camera stops producing video and will not come back.
+
+        On the reference hardware an unsupported picture size jams the encoder so
+        hard that restarting the session does not help; only unplugging it does.
+        Once that happens every later measurement is meaningless, so the probe
+        stops rather than filling the report with dozens of false negatives.
+        """
 
     def _wait_for_video(self, since: int) -> bool:
         """Wait for the restarted session to deliver fresh frames."""
@@ -173,6 +181,8 @@ class Prober:
         self.session.request_set({key: value})
 
         alive = self._wait_for_video(before)
+        if not alive:
+            self.wedged_at = f"{key}={value}"
         ret = self.session.last_set_ret
         accepted = ret != b"0"
         measured = self.collector.measure(self.settle) if alive else {
@@ -189,6 +199,8 @@ class Prober:
 
     def probe_frame_size(self) -> None:
         for width, height in P.FRAME_SIZES:
+            if self.wedged_at:
+                return
             value = P.frame_size_value(width, height)
             res = self._set_and_measure("FrameSize", value)
             got = (res.measured.get("width"), res.measured.get("height"))
@@ -205,6 +217,8 @@ class Prober:
 
     def probe_frame_rate(self) -> None:
         for rate in P.FRAME_RATES:
+            if self.wedged_at:
+                return
             res = self._set_and_measure("FrameRate", rate)
             fps = res.measured.get("fps", 0)
             if not res.measured.get("frames"):
@@ -219,6 +233,8 @@ class Prober:
 
     def probe_bit_rate(self) -> None:
         for rate in P.BIT_RATES:
+            if self.wedged_at:
+                return
             res = self._set_and_measure("BitRate", rate)
             kbps = res.measured.get("kbps", 0)
             if not res.measured.get("frames"):
@@ -235,6 +251,8 @@ class Prober:
         """Parameters whose effect we cannot see from the bitstream alone."""
         base = self.baseline.get("avg_frame_bytes") or 1
         for value in values:
+            if self.wedged_at:
+                return
             res = self._set_and_measure(key, value)
             avg = res.measured.get("avg_frame_bytes", 0)
             if not res.accepted:
@@ -268,27 +286,38 @@ class Prober:
             self.baseline["kbps"],
         )
 
-        self.probe_frame_size()
-        if not quick:
-            self.probe_frame_rate()
-            self.probe_bit_rate()
+        # Picture-quality settings first. They are the ones people actually want
+        # to know about, and the size and rate sweeps are what jam the encoder, so
+        # running those last means a jam costs the least information.
+        self.probe_simple("Infrared", [0, 1, 2])
         self.probe_simple("Zoom", [0, 1, 2, 3])
         self.probe_simple("FlipMirror", [0, 1, 2, 3])
-        self.probe_simple("Infrared", [0, 1, 2])
         if not quick:
             self.probe_simple("Brightness", [0, 128, 255])
             self.probe_simple("Contrast", [0, 4, 7])
             self.probe_simple("LightCond", [0, 1])
             self.probe_simple("LightFreq", [0, 1])
+        self.probe_frame_size()
+        if not quick:
+            self.probe_frame_rate()
+            self.probe_bit_rate()
 
-        log.info("restoring the settings the session started with")
-        self.session.request_set(original)
-        time.sleep(1.0)
+        if self.wedged_at:
+            log.error(
+                "the camera stopped sending video at %s and did not recover. "
+                "Unplug it, put the batteries back, and run the probe again to test the rest.",
+                self.wedged_at,
+            )
+        else:
+            log.info("restoring the settings the session started with")
+            self.session.request_set(original)
+            time.sleep(1.0)
 
         return {
             "baseline": self.baseline,
             "codec": self.collector.codec,
-            "restored": original,
+            "restored": None if self.wedged_at else original,
+            "stopped_responding_at": self.wedged_at,
             "results": [asdict(r) for r in self.results],
         }
 
