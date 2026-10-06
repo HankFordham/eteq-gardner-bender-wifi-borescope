@@ -388,3 +388,51 @@ class TestSharingToOtherDevices:
         page = urllib.request.urlopen(f"http://127.0.0.1:{server.port}/", timeout=10).read()
         assert b"X-Eteq-Key" in page, "the page must send the key it was opened with"
         assert b'get("k")' in page
+
+
+class TestUnreachableCamera:
+    """What happens when the address is wrong, which is the commonest mistake.
+
+    Retrying an address that nothing answers used to look identical to a broken
+    camera, and the browser page blamed itself for not playing video that never
+    existed.
+    """
+
+    def test_gives_up_and_explains(self, caplog):
+        import logging as _logging
+
+        # A port nothing is listening on, reached the way a guess would be.
+        session = CameraSession(
+            SessionOptions(
+                ip=None, cam_port=59998, local_port=0, discover=False,
+                ack_timeout=0.4, idle_timeout=1.0, reconnect=True, reconnect_delay=0.05,
+                stats_interval=0, dump_packets=0, dump_info=0, send_stop=False,
+            ),
+            CameraSettings(),
+            sinks=[],
+        )
+        session.camera_ip = "127.0.0.1"
+        with caplog.at_level(_logging.ERROR):
+            code = session.run()
+        assert code == 3, "it must stop rather than retry a dead address for ever"
+        text = caplog.text
+        assert "No packets at all came back" in text
+        assert "camera's own WiFi" in text, "the likeliest cause must be named"
+        assert "--install-firewall-rule" in text
+
+    def test_page_waits_for_video_before_blaming_the_browser(self, camera):
+        _, port = camera
+        hub = StreamHub(default_fps=30.0)
+        session = make_session(port, hub)
+        thread = threading.Thread(target=session.run, daemon=True)
+        thread.start()
+        server = CameraHTTPServer(0, hub, status_fn=session.status)
+        try:
+            page = urllib.request.urlopen(f"http://127.0.0.1:{server.port}/", timeout=10).read()
+            assert b"waitForVideo" in page
+            assert b"No video has arrived from the camera" in page
+            assert b"not a problem with the browser" in page
+        finally:
+            session.stop()
+            thread.join(timeout=5)
+            server.close()
