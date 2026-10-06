@@ -369,7 +369,8 @@
     $("frames").textContent = s.video_frames;
     $("drops").textContent = s.rx_duplicates;
     const age = s.last_rx_age_s;
-    if (age === null || age === undefined) setState("dead", "no camera");
+    if (!s.video_frames) setState(s.rx_packets ? "stale" : "dead", s.rx_packets ? "camera silent" : "no camera");
+    else if (age === null || age === undefined) setState("dead", "no camera");
     else if (age < 1.5) setState("live", "live, session " + s.sessions);
     else if (age < 5) setState("stale", "stalled " + age.toFixed(1) + "s");
     else setState("dead", "camera silent");
@@ -387,6 +388,34 @@
         }
       }
     }
+  }
+
+  async function waitForVideo(timeoutMs) {
+    const deadline = performance.now() + timeoutMs;
+    for (;;) {
+      try {
+        const s = await api("/api/status");
+        if (s.video_frames > 0) return true;
+        $("overlay-text").textContent =
+          s.camera
+            ? "Connected to " + s.camera[0] + ", waiting for it to start sending pictures…"
+            : "Looking for the camera…";
+      } catch (e) {
+        $("overlay-text").textContent = "Waiting for the relay…";
+      }
+      if (performance.now() > deadline) return false;
+      await new Promise((r) => setTimeout(r, 700));
+    }
+  }
+
+  function showCameraProblem() {
+    $("overlay-text").innerHTML =
+      "<b>No video has arrived from the camera.</b>" +
+      "<br><br>This is not a problem with the browser. Check that:" +
+      "<br>the camera is switched on," +
+      "<br>this computer is joined to the camera's own WiFi," +
+      "<br>and nothing else is connected to the camera, which allows only one at a time." +
+      "<br><br>The terminal running eteq explains what it tried.";
   }
 
   // ---- controls -----------------------------------------------------------
@@ -490,6 +519,15 @@
     // playback method works.
     poll();
     setInterval(poll, 1000);
+
+    // Wait for the camera before judging the browser. Without this, a camera
+    // that never connects looks exactly like a browser that cannot decode.
+    const gotVideo = await waitForVideo(25000);
+    if (!gotVideo) {
+      $("mode").textContent = "no camera";
+      showCameraProblem();
+      return;
+    }
 
     const codec = info.codec || "avc1.42001E";
     let mode = null;

@@ -114,14 +114,19 @@ the picture on:
 That prints a link and a short access key. Open the link on the phone. The page is
 built for a phone screen, and the snapshot button saves to the phone.
 
-The phone needs a way to reach the computer that is not the camera's own network.
-Either of these works:
+The computer needs **two** network connections at once: its WiFi stays on the
+camera, and something else carries the picture to the phone. Either of these
+works:
 
 - **At home:** plug the computer into your router with an Ethernet cable and put
   the phone on your normal WiFi.
 - **Anywhere, no router needed:** plug the phone into the computer with a USB
   cable and turn on USB tethering on the phone. That makes a private network
   between just those two devices. The phone does not need mobile data for this.
+
+What does **not** work is joining the computer's WiFi to the phone's hotspot. The
+computer has one WiFi radio, so it would leave the camera's network and there
+would be nothing to watch.
 
 Run `eteq --install-firewall-rule` once, which also opens the viewer port.
 

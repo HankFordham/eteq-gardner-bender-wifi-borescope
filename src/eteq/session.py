@@ -165,6 +165,8 @@ class CameraSession:
         self.transport: Transport | None = None
         self.camera_ip: str | None = None
         self.beacon = None
+        self.address_guessed = False
+        self._silent_sessions = 0
 
         self.framer = H264Framer()
         self._ts_offset = 0
@@ -365,6 +367,9 @@ class CameraSession:
     def run(self) -> int:
         opts = self.options
         self.camera_ip, self.beacon = resolve_camera(opts.ip, opts.discover, opts.discover_timeout)
+        # Nothing confirmed this address: no beacon answered and the user did not
+        # supply one, so it is the default gateway or the vendor's hardcoded value.
+        self.address_guessed = not opts.ip and self.beacon is None
         log.info(
             "camera %s:%d, local UDP port %s",
             self.camera_ip,
@@ -440,6 +445,14 @@ class CameraSession:
         if not self.set_acked:
             log.warning("the camera did not acknowledge the start command; listening anyway")
 
+        if t.rx_packets == 0:
+            self._silent_sessions += 1
+            self._explain_silence()
+            if self._silent_sessions >= 3:
+                return 3
+            return "reconnect"
+        self._silent_sessions = 0
+
         last_hb = last_stats = time.monotonic()
         while not self._stop.is_set():
             self._pump(lambda: False, 0.25)
@@ -478,6 +491,28 @@ class CameraSession:
                 )
                 return "restart"
         return 0
+
+    def _explain_silence(self) -> None:
+        """Say why nothing answered, in terms of what to actually do about it.
+
+        Retrying a wrong address forever looks identical to a broken camera, and
+        the commonest cause by far is simply not being on the camera's WiFi.
+        """
+        if self._silent_sessions > 1:
+            return
+        log.error("Nothing at %s answered. No packets at all came back.", self.camera_ip)
+        if self.address_guessed:
+            log.error(
+                "That address was a guess, because no camera announced itself. "
+                "The computer is almost certainly not on the camera's WiFi network."
+            )
+        log.error("Check, in this order:")
+        log.error("  1. The camera is switched on and its light is lit.")
+        log.error("  2. This computer is joined to the camera's own WiFi (often WIFICAMERA).")
+        log.error("  3. No phone or other app is connected to it; it allows only one at a time.")
+        log.error("  4. The firewall allows it: run  eteq --install-firewall-rule")
+        if self.address_guessed:
+            log.error("If you know the address, pass it directly, for example: eteq --ip 192.168.2.103")
 
     def _flush_pending(self) -> bool:
         """Apply queued parameter changes. Returns True if the session must restart."""
