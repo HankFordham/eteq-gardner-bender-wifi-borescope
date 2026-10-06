@@ -108,8 +108,17 @@ fraction of a second behind. The Smooth button turns this off, which removes tha
 fraction of a second and puts the jitter back; try both and keep whichever looks
 better on your camera.
 
-The status line reports the measured milliseconds between a frame arriving and
-being drawn.
+**The decoder is chosen, not accepted.** Decoders normally pipeline two or three
+frames deep, which at thirty frames a second is most of a tenth of a second
+before anything reaches the screen. The app looks for a hardware decoder that
+advertises low latency and asks for it by name, then requests realtime priority
+and the several vendor spellings of the same idea, at configure time and again
+once running. Unknown keys are ignored, so offering all of them is safe.
+
+The status line reports the measured milliseconds between handing a frame to the
+decoder and getting it back, and names the decoder in use. Two frames' worth,
+around 60 ms, means the pipeline is still deep; a single frame, around 30 ms,
+means the low-latency path took.
 
 ## Known limits
 

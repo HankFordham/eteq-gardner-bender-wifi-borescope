@@ -369,12 +369,13 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
             lastFrameCount = session.videoFrames;
 
             String line = String.format(Locale.US,
-                    "%s  %dx%d  %.1f fps  %d ms  %d frames%s%s",
-                    cameraIp == null ? "camera" : cameraIp,
+                    "%dx%d  %.1f fps  %d ms  %d frames%s%s%s",
                     videoWidth, videoHeight, measuredFps,
                     decoder.lastLatencyMs(), session.videoFrames,
                     decoder.droppedFrames() > 0 ? "  " + decoder.droppedFrames() + " dropped" : "",
-                    recorder.isRecording() ? "  REC " + recorder.frameCount() : "");
+                    recorder.isRecording() ? "  REC " + recorder.frameCount() : "",
+                    decoder.decoderName().isEmpty()
+                            ? "" : System.lineSeparator() + decoder.decoderName());
             status.setText(line);
         }
         main.postDelayed(this::tick, 1000);
