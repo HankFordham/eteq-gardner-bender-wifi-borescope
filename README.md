@@ -188,22 +188,33 @@ cameras refuse most settings changed while they are streaming, and stop encoding
 altogether on some, so every change restarts the stream. `--live-settings` sends
 changes in place instead, if your camera is one that accepts them.
 
-**It connects, then dies a few seconds after the picture starts.** That is the
-signature of a camera whose power cannot cope with transmitting. Run it with
-`--watch-beacon`: the camera announces itself once a second whether or not video
-is flowing, so that tells you whether the camera rebooted or merely stopped
-encoding.
+**It connects, then dies, and afterwards will not reconnect.** Run it with
+`--watch-beacon` and it will tell you which of three things happened:
 
 ```
 eteq --watch-beacon
 ```
 
-If the announcements stop at the same moment as the picture and return a few
-seconds later, the camera lost power and restarted. On a battery tool that means
-the cells, their contacts or the switch, and no amount of software will help.
-Note that four rechargeable cells give 4.8 volts against six from alkalines,
-which is enough to run one of these at idle and not enough once the radio starts
-transmitting.
+The camera announces itself once a second, but **only while no client is
+connected**: the announcements stopping during a healthy session is normal and
+means nothing on its own. So the tool reads the announcements and the picture
+together, and says at the end:
+
+| what it reports | what it means |
+| --- | --- |
+| off the air, then back a few seconds later | the camera rebooted. On a battery tool that is the cells, their contacts or the switch, and no software can help |
+| off the air and never back | the firmware hung. The camera is not restarting, because a camera that restarts announces itself again at once. Only pulling the batteries clears it |
+| still announcing itself but no picture | the encoder jammed while the camera stayed alive. Also only cleared by pulling the batteries |
+
+The last two are what this hardware does when it is asked to restart its encoder,
+which every settings change does. If the log shows an `applying ...` line just
+before everything went quiet, that is the cause: change settings before you start
+watching, with `--bitrate` or `--fps` on the command line, rather than from the
+page while the picture is running.
+
+If it does turn out to be power, note that four rechargeable cells give 4.8 volts
+against six from alkalines, which is enough to run one of these at idle and not
+enough once the radio starts transmitting.
 
 **It stalls every few seconds.** Check `rx_duplicates` on `/api/status`. Heavy
 duplication means a weak radio link; move the camera closer.

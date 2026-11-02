@@ -405,7 +405,10 @@ def run_live(args: argparse.Namespace) -> int:
     if args.watch_beacon:
         from .discovery import BeaconWatcher
 
-        watcher = BeaconWatcher()
+        # The watcher must be able to see whether video is arriving, because the
+        # camera stops announcing itself while it is streaming to us and the
+        # silence is otherwise indistinguishable from the camera dying.
+        watcher = BeaconWatcher(frames_fn=lambda: session.video_frames)
         watcher.start()
         if not args.ip:
             log.info("waiting for the camera to announce itself")
@@ -469,10 +472,28 @@ def run_live(args: argparse.Namespace) -> int:
             watcher.stop()
             log.info("beacon over the whole run: %s", watcher.summary())
             if watcher.outages:
+                if watcher.recoveries:
+                    log.info(
+                        "The camera went off the air %d time(s) and came back. That is it "
+                        "rebooting: a power fault, so look at the cells, their contacts and "
+                        "the switch. No change to this tool can work around it.",
+                        watcher.outages,
+                    )
+                else:
+                    log.info(
+                        "The camera went off the air and never came back. It did not reboot, "
+                        "because a camera that has restarted announces itself again within a "
+                        "second or two. Its firmware has hung and only pulling the batteries "
+                        "will clear it. Check the log for what was asked of it just before: "
+                        "a settings change restarts the encoder, and this hardware often does "
+                        "not survive that."
+                    )
+            elif watcher.encoder_stalls:
                 log.info(
-                    "The camera went off the air %d time(s). That is a power or radio "
-                    "fault in the camera, not something this tool can work around.",
-                    watcher.outages,
+                    "The camera never went off the air, but the picture stopped %d time(s) "
+                    "while it was still announcing itself. Its encoder jammed and its power "
+                    "is fine. Pulling the batteries is the only way to clear that.",
+                    watcher.encoder_stalls,
                 )
 
 

@@ -62,6 +62,14 @@ Layout, from `OVBroadcast.DatagramWorker.run()` (`OVBroadcast.java`, the app's d
 If width/height are 0 the app substitutes **640x240** (line 304-307). That is the
 only place the camera "tells" the app its picture size and it is 640x240, not 640x480.
 
+**The camera stops beaconing while a client is connected.** Confirmed live on
+2026-11-02: one beacon arrived, the client connected, and over the next 2.5
+minutes of continuous video not a single further beacon was broadcast, even
+though the camera was plainly transmitting. The announcements do not resume while
+the session is up. So beacon silence is *not* evidence that the camera has gone
+away, and any health check built on it has to read the beacon and the video
+together.
+
 **The app does not need the beacon.** `PlayerActivity.checkonline()` (line 1091-1096)
 runs every second and unconditionally sets `devinfo[0].ipaddr = "192.168.2.103"`,
 name `WIFICAM`, so the stream starts even if no beacon is ever received. The beacon
@@ -374,3 +382,32 @@ sent no `TypeAudio` chunks, so there may be no microphone), the other `FrameSize
 values including 640x480 (`28001e0`), `Infrared`/`LightCond`, and `Video0` as a
 stop command (the camera acked it with `Ret1`, but it was always followed by closing
 the socket, so its effect alone is unknown).
+
+### 6.1 A camera that hangs rather than reboots (2026-11-02, one 190 s session)
+
+A long clean session that ended in a total hang, which is worth recording because
+it looks exactly like a flat battery and is not one.
+
+The session streamed for 144 s with **zero** duplicate packets: 21,829 packets,
+4,301 frames, 19.8 MB. Then duplicates appeared and climbed quickly, 117 and then
+445 within ten seconds, with roughly 600 retransmissions from our side. About
+fifteen seconds after that the client sent a `BitRate` change, which restarts the
+stream. The camera acked the `Video0` with `Ret1`, sent one stray 4-byte packet
+with an unrecognised sequence pair (`02 a1 a1 76`), and then answered nothing
+again: no ack of `AllInfo`, no ack of the start command, and no beacon, for the
+remaining 27 s.
+
+So the failure mode is a **firmware hang at encoder restart**, not a power loss:
+
+* a brownout drops the camera at an arbitrary moment, and the camera reappears,
+  beaconing, within a second or two of coming back up;
+* this camera stopped at the exact moment it was told to restart its encoder, and
+  never transmitted again until its batteries were pulled.
+
+A hung camera's hotspot also stops completing association, which Android reports
+as an incorrect WiFi password. That is worth knowing, because it sends people
+looking for a password problem that does not exist.
+
+The rising duplicates beforehand are unexplained. They may be the same firmware
+fault beginning, or an unrelated radio problem that made the settings change more
+likely to be mishandled.

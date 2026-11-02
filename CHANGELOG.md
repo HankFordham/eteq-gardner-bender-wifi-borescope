@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `--watch-beacon` now tells apart the three ways one of these cameras can stop:
+  it rebooted (off the air, then announcing itself again), its firmware hung (off
+  the air and never back), or its encoder jammed while the camera stayed alive
+  (still announcing itself, no picture). The verdict is printed at the end of the
+  run, and the troubleshooting section of the README explains what to do about
+  each one.
 - A rebuilt interface for the Android app: Material 3 throughout, the picture
   edge to edge with controls that fade away, pinch to zoom and pan, a settings
   sheet, status pills, a recording timer, and a diagnostics overlay. Despite
@@ -24,6 +30,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `--watch-beacon` reported a perfectly healthy camera as having gone off the air.
+  The camera stops broadcasting its announcement while a client is connected, so
+  silence during a session is normal, and the watcher now reads the announcements
+  and the picture together before blaming anything. It also could not detect the
+  encoder-jam case at all, because receiving an announcement skipped the rest of
+  its loop, and its end-of-run summary reported an outage still in progress as
+  having lasted 0.0 seconds.
 - Several causes of delay and judder in the Android app: frames are now completed
   from the size the camera declares rather than by waiting for the next frame to
   start, the decoder runs on callbacks instead of blocking, the picture goes to a
