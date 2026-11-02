@@ -411,3 +411,25 @@ looking for a password problem that does not exist.
 The rising duplicates beforehand are unexplained. They may be the same firmware
 fault beginning, or an unrelated radio problem that made the settings change more
 likely to be mishandled.
+
+**The control run (same morning, 177 s, nothing touched).** The identical command
+with no settings change at all ran for 177 s and was stopped by hand, healthy:
+26,717 packets, 5,231 frames, 24.3 MB, and the camera never went off the air.
+That is the same camera, the same cells and the same computer as the failure
+above. So the trigger is the settings change, not the power.
+
+**A reproducible burst of retransmissions about 2.5 minutes in.** Both runs show
+one, and only one:
+
+| run | starts | duplicates seen | then |
+| --- | --- | --- | --- |
+| the one that died | 149 s in | 117, then 445 | no further duplicates |
+| the control | 164 s in | 72, then 223 | no further duplicates |
+
+Roughly ten seconds of heavy retransmission that then clears completely. The
+control run rode it out with no loss of picture. In the failed run the `BitRate`
+change was sent during it, so the restart handshake went into a link that was
+already dropping packets. Cause unknown; a Windows WiFi adapter periodically
+scanning for other networks is the obvious suspect, because it leaves the channel
+briefly and does it more often on a network with no internet, but that has not
+been tested. Whatever it is, do not change camera settings while it is happening.

@@ -130,11 +130,16 @@
       <select id="FrameRate"></select>
       <label class="chip" for="BitRate" style="border:none">Bitrate</label>
       <select id="BitRate"></select>
+      <button id="applyStream" class="chip" disabled>Apply</button>
     </div>
     <p class="note">
-      Every change here restarts the picture, which takes a second or two. That is deliberate:
-      these cameras refuse most changes made while they are streaming, and a few stop sending
-      altogether. Run <code>eteq --probe</code> to find out which values yours really honours.
+      These three are not sent until you press Apply, and all three go together so the picture
+      restarts only once. The restart is the dangerous part: some of these cameras stop
+      responding to anything at all when asked to restart their encoder, and then only pulling
+      the batteries revives them. The reference camera does exactly that if asked for any
+      picture size but 640x240, or any frame rate at all. Run <code>eteq --probe</code> to find
+      out which values yours really honours, and prefer setting these on the command line
+      (<code>--size</code>, <code>--fps</code>, <code>--bitrate</code>) before the picture starts.
     </p>
   </div>
 </main>
@@ -441,6 +446,12 @@
   }
   ["Brightness", "Contrast", "Saturation", "Zoom", "FlipMirror", "Infrared"].forEach(wireSlider);
 
+  // The three stream parameters are staged rather than sent on change. Picking a
+  // value by accident used to restart the camera's encoder straight away, and a
+  // camera that will not survive that restart is dead until its batteries come
+  // out. Staging them also means one restart instead of three.
+  const staged = {};
+
   function fillSelect(id, values, format, current) {
     const el = $(id);
     el.innerHTML = "";
@@ -450,14 +461,33 @@
       opt.textContent = format(v);
       el.appendChild(opt);
     }
-    if (current !== undefined) el.value = String(current);
-    el.addEventListener("change", async () => {
-      try {
-        await api("/api/set", { [id]: Number(el.value) });
-        toast(id + " = " + el.options[el.selectedIndex].textContent);
-      } catch (e) { toast("failed to set " + id); }
+    const initial = current === undefined ? null : String(current);
+    if (initial !== null) el.value = initial;
+    el.addEventListener("change", () => {
+      if (initial !== null && el.value === initial) delete staged[id];
+      else staged[id] = Number(el.value);
+      const count = Object.keys(staged).length;
+      const apply = $("applyStream");
+      apply.disabled = count === 0;
+      apply.textContent = count ? "Apply " + count + " change" + (count > 1 ? "s" : "") : "Apply";
     });
   }
+
+  $("applyStream").addEventListener("click", async () => {
+    const pending = { ...staged };
+    const names = Object.keys(pending);
+    if (!names.length) return;
+    const apply = $("applyStream");
+    apply.disabled = true;
+    apply.textContent = "Apply";
+    for (const name of names) delete staged[name];
+    try {
+      await api("/api/set", pending);
+      toast("restarting the picture: " + names.join(", "));
+    } catch (e) {
+      toast("failed to set " + names.join(", "));
+    }
+  });
 
   $("snap").addEventListener("click", () => {
     const w = video.videoWidth, h = video.videoHeight;

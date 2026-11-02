@@ -28,6 +28,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the computer stays connected to the camera. Protected by a generated access key,
   and the firewall helper now opens the viewer port too.
 
+### Changed
+
+- The picture size, frame rate and bitrate controls on the page are now staged and
+  sent only when Apply is pressed, instead of taking effect the moment a value is
+  picked. Each of those changes restarts the camera's encoder, and a camera that
+  does not survive the restart is dead until its batteries come out, so it should
+  not be one careless scroll away. Applying several at once also restarts the
+  picture once rather than once per change.
+
 ### Fixed
 
 - `--watch-beacon` reported a perfectly healthy camera as having gone off the air.

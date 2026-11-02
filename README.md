@@ -188,6 +188,12 @@ cameras refuse most settings changed while they are streaming, and stop encoding
 altogether on some, so every change restarts the stream. `--live-settings` sends
 changes in place instead, if your camera is one that accepts them.
 
+Because that restart can leave one of these cameras unresponsive until its
+batteries are pulled, the picture size, frame rate and bitrate controls on the
+page do nothing until you press Apply, and several changes are applied together so
+the picture restarts once. Safest of all is to set them before the picture starts,
+with `--size`, `--fps` and `--bitrate`.
+
 **It connects, then dies, and afterwards will not reconnect.** Run it with
 `--watch-beacon` and it will tell you which of three things happened:
 
