@@ -139,6 +139,12 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--probe", action="store_true", help="measure which settings the camera honours")
     g.add_argument("--probe-quick", action="store_true", help="shorter probe, sizes and toggles only")
     g.add_argument("--probe-out", default="eteq-probe.json", metavar="FILE")
+    g.add_argument(
+        "--watch-beacon",
+        action="store_true",
+        help="also watch the camera's once-a-second announcement, which tells a camera "
+             "that rebooted apart from one that merely stopped sending video",
+    )
     g.add_argument("--dry-run", action="store_true", help="print the packets that would be sent, then exit")
     g.add_argument("--duration", type=float, default=0, metavar="SEC", help="quit after this long")
     g.add_argument("--stats", type=float, default=5.0, metavar="SEC", help="0 disables the periodic summary")
@@ -393,6 +399,21 @@ def run_live(args: argparse.Namespace) -> int:
         session.sinks.append(make_recorder(args.record, default_fps=float(args.fps or 30)))
         log.info("recording to %s", args.record)
 
+    # Started before the session, because both want UDP 2000 and only one of them
+    # can have it. The watcher hands the address over when it hears the camera.
+    watcher = None
+    if args.watch_beacon:
+        from .discovery import BeaconWatcher
+
+        watcher = BeaconWatcher()
+        watcher.start()
+        if not args.ip:
+            log.info("waiting for the camera to announce itself")
+            first = watcher.wait_for_first(args.discover_timeout)
+            if first is not None:
+                options.ip = first.ip
+        options.discover = False
+
     server = None
     if want_http:
         host = args.bind or ("0.0.0.0" if args.lan else "127.0.0.1")  # noqa: S104 - opt in
@@ -444,6 +465,15 @@ def run_live(args: argparse.Namespace) -> int:
         session.close()
         if server is not None:
             server.close()
+        if watcher is not None:
+            watcher.stop()
+            log.info("beacon over the whole run: %s", watcher.summary())
+            if watcher.outages:
+                log.info(
+                    "The camera went off the air %d time(s). That is a power or radio "
+                    "fault in the camera, not something this tool can work around.",
+                    watcher.outages,
+                )
 
 
 def main(argv: list[str] | None = None) -> int:

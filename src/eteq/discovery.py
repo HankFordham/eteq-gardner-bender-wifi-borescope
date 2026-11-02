@@ -15,6 +15,7 @@ import socket
 import struct
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass
 
@@ -140,6 +141,110 @@ def listen_beacons(timeout: float = 4.0, port: int = BEACON_PORT) -> list[Beacon
     finally:
         sock.close()
     return found
+
+
+class BeaconWatcher:
+    """Watches the camera's once-a-second announcement for the whole session.
+
+    The beacon is the only signal that comes from the camera whether or not it is
+    sending video, which makes it the one way to tell three very similar-looking
+    failures apart:
+
+    * the beacon stops and the video stops together, then the beacon comes back a
+      few seconds later: the camera lost power and rebooted, which on a
+      battery-powered tool means its supply, its contacts or its switch;
+    * the beacon carries on but the video stops: the camera is alive and its
+      encoder has jammed;
+    * the beacon stops and never returns: the WiFi link itself went away.
+
+    Runs on its own thread and only reports when something changes, so a healthy
+    session produces no output at all.
+    """
+
+    def __init__(self, port: int = BEACON_PORT, gap: float = 3.0) -> None:
+        self.port = port
+        self.gap = gap
+        self.last_seen: float | None = None
+        self.first_beacon: Beacon | None = None
+        self.count = 0
+        self.outages = 0
+        self.longest_outage = 0.0
+        self._missing_since: float | None = None
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def start(self) -> None:
+        self._thread = threading.Thread(target=self._run, name="beacon-watch", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def wait_for_first(self, timeout: float) -> Beacon | None:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline and not self._stop.is_set():
+            if self.first_beacon is not None:
+                return self.first_beacon
+            time.sleep(0.1)
+        return self.first_beacon
+
+    def summary(self) -> str:
+        if self.count == 0:
+            return "no beacon was ever seen"
+        return (
+            f"{self.count} beacons, {self.outages} interruption(s), "
+            f"longest {self.longest_outage:.1f}s"
+        )
+
+    def _run(self) -> None:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind(("", self.port))
+        except OSError as exc:
+            log.error("cannot watch the beacon on UDP %d: %s", self.port, exc)
+            return
+        sock.settimeout(0.5)
+        log.info("watching the camera's beacon; silence here means it stopped transmitting")
+        try:
+            while not self._stop.is_set():
+                try:
+                    data, addr = sock.recvfrom(1024)
+                    beacon = parse_beacon(data, addr[0])
+                except (TimeoutError, OSError):
+                    beacon = None
+                now = time.monotonic()
+
+                if beacon is not None:
+                    if self.first_beacon is None:
+                        self.first_beacon = beacon
+                        log.info("beacon: %s", beacon.describe())
+                    self.count += 1
+                    if self._missing_since is not None:
+                        outage = now - self._missing_since
+                        self.longest_outage = max(self.longest_outage, outage)
+                        log.warning(
+                            "the camera is announcing itself again after %.1fs. "
+                            "A gap of a few seconds like this is the camera rebooting, "
+                            "which on batteries points at the cells, their contacts or the switch.",
+                            outage,
+                        )
+                        self._missing_since = None
+                    self.last_seen = now
+                    continue
+
+                if self.last_seen is not None and self._missing_since is None:
+                    if now - self.last_seen > self.gap:
+                        self._missing_since = self.last_seen
+                        self.outages += 1
+                        log.error(
+                            "the camera has stopped announcing itself (%.1fs of silence). "
+                            "It is not merely refusing to send video: it has stopped transmitting "
+                            "altogether, so it has either lost power or dropped off the air.",
+                            now - self.last_seen,
+                        )
+        finally:
+            sock.close()
 
 
 def guess_gateway() -> str | None:

@@ -188,6 +188,23 @@ cameras refuse most settings changed while they are streaming, and stop encoding
 altogether on some, so every change restarts the stream. `--live-settings` sends
 changes in place instead, if your camera is one that accepts them.
 
+**It connects, then dies a few seconds after the picture starts.** That is the
+signature of a camera whose power cannot cope with transmitting. Run it with
+`--watch-beacon`: the camera announces itself once a second whether or not video
+is flowing, so that tells you whether the camera rebooted or merely stopped
+encoding.
+
+```
+eteq --watch-beacon
+```
+
+If the announcements stop at the same moment as the picture and return a few
+seconds later, the camera lost power and restarted. On a battery tool that means
+the cells, their contacts or the switch, and no amount of software will help.
+Note that four rechargeable cells give 4.8 volts against six from alkalines,
+which is enough to run one of these at idle and not enough once the radio starts
+transmitting.
+
 **It stalls every few seconds.** Check `rx_duplicates` on `/api/status`. Heavy
 duplication means a weak radio link; move the camera closer.
 
