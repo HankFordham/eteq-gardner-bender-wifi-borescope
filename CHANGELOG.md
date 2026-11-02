@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The app's light and flip settings are staged behind an Apply button too, for the
+  same reason, and apply together so the picture restarts once.
 - The picture size, frame rate and bitrate controls on the page are now staged and
   sent only when Apply is pressed, instead of taking effect the moment a value is
   picked. Each of those changes restarts the camera's encoder, and a camera that
@@ -39,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Messages raised from the app's settings sheet were drawn behind the sheet and so
+  were never seen, because they attached to the activity rather than to the sheet.
 - `--watch-beacon` reported a perfectly healthy camera as having gone off the air.
   The camera stops broadcasting its announcement while a client is connected, so
   silence during a session is normal, and the watcher now reads the announcements

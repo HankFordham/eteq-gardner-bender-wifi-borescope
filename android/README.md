@@ -39,8 +39,12 @@ sheet, so the bar stays uncluttered.
   size, and the frame rate. Turning on diagnostics adds a line with the delay in
   milliseconds, dropped frames and the decoder in use.
 - **Settings** holds the picture shape, the motion preference, whether the screen
-  stays awake, diagnostics, and the camera's own light and flip settings, with a
-  plain warning that those restart the picture and that many cameras refuse them.
+  stays awake, diagnostics, and the camera's own light and flip settings. Those last
+  two are not sent when you pick them: they wait for the Apply button, and go
+  together so the picture restarts once. The restart is the reason for the wait.
+  Sending one of these makes the camera restart its encoder, and some of these
+  cameras never answer again afterwards until their batteries are pulled, which is
+  too much to hang on a mistaken tap.
 
 The app is dark throughout, because it is for looking at a dimly lit picture, and
 uses one accent colour rather than following the system theme, so the interface

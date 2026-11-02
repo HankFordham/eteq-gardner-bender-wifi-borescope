@@ -702,10 +702,35 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
             diagnostics.setVisibility(checked ? View.VISIBLE : View.GONE);
         });
 
+        // Camera settings are staged here and sent only when Apply is pressed. The
+        // map and the button belong to this sheet, so closing it discards anything
+        // that was not applied.
+        Map<String, Integer> stagedCamera = new HashMap<>();
+        MaterialButton applyCamera = sheet.findViewById(R.id.applyCamera);
         wireCameraParameter(sheet, R.id.ledGroup, "Infrared",
-                new int[]{R.id.led0, R.id.led1, R.id.led2});
+                new int[]{R.id.led0, R.id.led1, R.id.led2}, stagedCamera, applyCamera);
         wireCameraParameter(sheet, R.id.flipGroup, "FlipMirror",
-                new int[]{R.id.flip0, R.id.flip1, R.id.flip2, R.id.flip3});
+                new int[]{R.id.flip0, R.id.flip1, R.id.flip2, R.id.flip3}, stagedCamera, applyCamera);
+        if (applyCamera != null) {
+            applyCamera.setOnClickListener(v -> {
+                if (stagedCamera.isEmpty()) {
+                    return;
+                }
+                if (session == null) {
+                    // Keep the choices staged rather than silently dropping them, and
+                    // say why nothing happened: a button that does nothing at all
+                    // reads as a broken app.
+                    sayOn(applyCamera, getString(R.string.toast_not_connected));
+                    return;
+                }
+                String names = String.join(", ", stagedCamera.keySet());
+                session.requestSet(new HashMap<>(stagedCamera));
+                stagedCamera.clear();
+                applyCamera.setEnabled(false);
+                applyCamera.setText(R.string.settings_camera_apply);
+                sayOn(applyCamera, getString(R.string.toast_asked, names));
+            });
+        }
 
         gallery.setOnClickListener(v -> {
             sheet.dismiss();
@@ -719,24 +744,32 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
     /**
      * Wire one of the camera's own parameters to a row of buttons.
      *
-     * <p>Deliberately fire-and-forget: these cameras accept a change, refuse it, or
-     * stop sending altogether, and the only honest feedback is the picture itself.
+     * <p>Choosing a value only stages it. Sending one of these restarts the camera's
+     * encoder, and this hardware does not always survive that restart: when it does
+     * not, only pulling the batteries revives it. That is too much to hang on a
+     * mistaken tap, so it waits for Apply.
+     *
+     * <p>Applying is still deliberately fire-and-forget: these cameras accept a
+     * change, refuse it, or stop sending altogether, and the only honest feedback is
+     * the picture itself.
      */
-    private void wireCameraParameter(BottomSheetDialog sheet, int groupId, String key, int[] buttons) {
+    private void wireCameraParameter(BottomSheetDialog sheet, int groupId, String key, int[] buttons,
+                                     Map<String, Integer> staged, MaterialButton apply) {
         MaterialButtonToggleGroup group = sheet.findViewById(groupId);
         if (group == null) {
             return;
         }
         group.addOnButtonCheckedListener((g, checkedId, isChecked) -> {
-            if (!isChecked || session == null) {
+            if (!isChecked) {
                 return;
             }
             for (int i = 0; i < buttons.length; i++) {
                 if (buttons[i] == checkedId) {
-                    Map<String, Integer> change = new HashMap<>();
-                    change.put(key, i);
-                    session.requestSet(change);
-                    say(getString(R.string.toast_asked, key, i));
+                    staged.put(key, i);
+                    if (apply != null) {
+                        apply.setEnabled(true);
+                        apply.setText(getString(R.string.settings_camera_apply_n, staged.size()));
+                    }
                     return;
                 }
             }
@@ -791,6 +824,21 @@ public class MainActivity extends Activity implements CameraSession.Listener, Vi
         Snackbar bar = Snackbar.make(root, text, Snackbar.LENGTH_SHORT);
         bar.setAnchorView(controls);
         bar.show();
+    }
+
+    /**
+     * Say something from inside a dialog.
+     *
+     * <p>{@link #say} attaches to the activity, which the settings sheet covers, so a
+     * message raised from the sheet was drawn behind it and never seen. Attaching to a
+     * view inside the sheet puts it in the sheet's own window, where it is visible.
+     */
+    private void sayOn(View host, String text) {
+        if (host == null) {
+            say(text);
+            return;
+        }
+        Snackbar.make(host, text, Snackbar.LENGTH_SHORT).show();
     }
 
     private void sayWithAction(String text, String action, Runnable onAction) {

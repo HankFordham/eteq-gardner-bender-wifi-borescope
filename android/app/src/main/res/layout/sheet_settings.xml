@@ -163,6 +163,19 @@
                 android:text="@string/flip_both"/>
         </com.google.android.material.button.MaterialButtonToggleGroup>
 
+        <!--
+          Nothing above is sent until this is pressed. Each of these changes restarts
+          the camera's encoder, and some of these cameras never come back from that.
+        -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/applyCamera"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:enabled="false"
+            android:text="@string/settings_camera_apply"/>
+
         <!-- Elsewhere -->
         <TextView
             style="@style/SectionLabel"

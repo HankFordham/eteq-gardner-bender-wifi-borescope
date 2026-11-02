@@ -33,7 +33,9 @@
     <string name="settings_diagnostics">Show diagnostics</string>
     <string name="settings_diagnostics_help">Frame delay, decoder and dropped frames, over the picture.</string>
     <string name="settings_camera">Camera</string>
-    <string name="settings_camera_help">Changing any of these restarts the picture. Many cameras in this family refuse them, and some stop sending until their batteries are pulled.</string>
+    <string name="settings_camera_help">Nothing here is sent until you press Apply. Each change restarts the picture, and that restart is the risk: many cameras in this family refuse these settings, and some stop responding to anything at all until their batteries are pulled.</string>
+    <string name="settings_camera_apply">Apply camera settings</string>
+    <string name="settings_camera_apply_n">Apply %1$d change(s)</string>
     <string name="settings_led">Light</string>
     <string name="settings_flip">Flip and mirror</string>
     <string name="settings_saved">Saved photos and recordings</string>
@@ -58,7 +60,8 @@ Join the camera\'s own network, usually called WIFICAMERA, and check that nothin
     <string name="about_line">eteq %1$s
 camera  %2$s
 decoder %3$s</string>
-    <string name="toast_asked">Asked the camera for %1$s %2$d. The picture will restart.</string>
+    <string name="toast_not_connected">Connect to the camera first. These are still waiting.</string>
+    <string name="toast_asked">Asked the camera for %1$s. The picture will restart.</string>
 
     <string name="led_off">Off</string>
     <string name="led_low">Low</string>
